@@ -34,7 +34,7 @@ const options = {
             description: '원격 개발 서버',
         },
         {
-            url: 'https://flowalpha.store',
+            url: 'https://api.flowalpha.store',
             description: '원격 개발 서버',
         },
         ],

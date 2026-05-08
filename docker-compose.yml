@@ -33,8 +33,8 @@ services:
       - "443:443"
     volumes:
       - ./nginx/conf.d:/etc/nginx/conf.d
-      - /etc/letsencrypt/live/flowalpha.store/fullchain.pem:/etc/nginx/certs/fullchain.pem
-      - /etc/letsencrypt/live/flowalpha.store/privkey.pem:/etc/nginx/certs/privkey.pem
+      - /etc/letsencrypt/live/api.flowalpha.store/fullchain.pem:/etc/nginx/certs/fullchain.pem
+      - /etc/letsencrypt/live/api.flowalpha.store/privkey.pem:/etc/nginx/certs/privkey.pem
     networks:
       - bookridge-network
 
