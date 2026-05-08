@@ -29,10 +29,10 @@ const options = {
             url: 'http://localhost:3000',
             description: '로컬 개발 서버',
         },
-        // {
-        //     url: 'https://bookridge.store',
-        //     description: '원격 개발 서버',
-        // },
+        {
+            url: 'http://15.164.218.166',
+            description: '원격 개발 서버',
+        },
         ],
     },
     apis: [
