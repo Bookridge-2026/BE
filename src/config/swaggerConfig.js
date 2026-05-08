@@ -33,6 +33,10 @@ const options = {
             url: 'http://15.164.218.166',
             description: '원격 개발 서버',
         },
+        {
+            url: 'https://flowalpha.store',
+            description: '원격 개발 서버',
+        },
         ],
     },
     apis: [
