@@ -50,6 +50,21 @@
  *                         refreshToken:
  *                           type: string
  *                           example: eyJhbGci...
+ *                         user:
+ *                           type: object
+ *                           properties:
+ *                             id:
+ *                               type: integer
+ *                               example: 1
+ *                             email:
+ *                               type: string
+ *                               example: test@gmail.com
+ *                             name:
+ *                               type: string
+ *                               example: 홍길동
+ *                     data:
+ *                       type: string
+ *                       example: 홍길동
  *       302:
  *         description: 로그인 실패 시 /login-failed로 리다이렉트
  */
@@ -77,12 +92,24 @@
  *                 user:
  *                   type: object
  *                   properties:
- *                     id:
+ *                     userId:
  *                       type: integer
  *                       example: 1
+ *                     googleId:
+ *                       type: string
+ *                       example: 1234567890
  *                     email:
  *                       type: string
  *                       example: test@gmail.com
+ *                     nickname:
+ *                       type: string
+ *                       example: 홍길동
+ *                     profileImageUrl:
+ *                       type: string
+ *                       example: https://lh3.googleusercontent.com/...
+ *                     userCode:
+ *                       type: string
+ *                       example: a1b2c3d4
  *       401:
  *         description: 인증 실패
  */
@@ -111,7 +138,7 @@ router.get(
       success: {
         message: 'Google 로그인 성공!',
         tokens: req.user,
-        data: req.user.name,
+        data: req.user.user.name,
       },
     });
   }
