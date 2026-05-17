@@ -11,4 +11,6 @@ db.Sequelize = Sequelize;
 //아래 양식으로 모델 생성
 // db.subscriber = require("./subscriber.js")(sequelize, Sequelize);
 
+db.user = require("./user.js")(sequelize, Sequelize);
+
 module.exports = db;
