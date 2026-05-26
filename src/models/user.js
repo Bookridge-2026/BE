@@ -1,7 +1,7 @@
 
 const { DataTypes } = require('sequelize');
 
-module.exports = (sequelize) => {
+module.exports = (sequelize, DataTypes) => {  
   const User = sequelize.define('User', {
     userId: {
       type: DataTypes.BIGINT,
@@ -45,6 +45,13 @@ module.exports = (sequelize) => {
     tableName: 'user',
     timestamps: false,
   });
+
+  User.associate = (models) => {
+     User.hasMany(models.member, {
+        foreignKey: "userId",    
+        as: "members",
+    });
+        };
 
   return User;
 };
