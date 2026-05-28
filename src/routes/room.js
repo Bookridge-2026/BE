@@ -25,21 +25,20 @@ router.get("/:roomId/members", roomController.getMembers);
 
 
 // 일반 코멘트
-// p 쪽수에 맞는 코멘트 쭉 가져옴
 router.get("/:roomId/comments", commentController.getComments);
 router.post("/:roomId/comments", isLogin, commentController.createComment);
 router.patch("/:roomId/comments/:commentId", isLogin, commentController.updateComment);
 router.delete("/:roomId/comments/:commentId", isLogin, commentController.deleteComment);
 
-/*
+
 // 대댓글
 router.get("/:roomId/comments/:commentId/replies", commentController.getReplies);
 router.post("/:roomId/comments/:commentId/replies", isLogin, commentController.createReply);
 router.delete("/:roomId/comments/:commentId/replies/:replyId", isLogin, commentController.deleteReply);
 
 // 이모지 반응
-router.post("/:roomId/comments/:commentId/reactions", emojiController.addReaction);
-router.delete("/:roomId/comments/:commentId/reactions/:emojiTypeId", emojiController.removeReaction);
+router.get("/:roomId/reactions", emojiController.getReactions);
+router.post("/:roomId/reactions", emojiController.addReaction);
+router.delete("/:roomId/reactions/:emojiId", emojiController.removeReaction);
 
-*/
 module.exports = router;
