@@ -38,7 +38,7 @@ router.delete("/:roomId/comments/:commentId/replies/:replyId", isLogin, commentC
 
 // 이모지 반응
 router.get("/:roomId/reactions", emojiController.getReactions);
-router.post("/:roomId/reactions", emojiController.addReaction);
-router.delete("/:roomId/reactions/:emojiId", emojiController.removeReaction);
+router.post("/:roomId/reactions", isLogin, emojiController.addReaction);
+router.delete("/:roomId/reactions/:emojiId", isLogin, emojiController.removeReaction);
 
 module.exports = router;

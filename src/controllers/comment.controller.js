@@ -128,7 +128,7 @@ const createComment = async (req, res) => {
         const { page, content, comment } = req.body;
         
         const userId = req.user.userId;
-        const newComment = await commentService.createComment(roomId, page, content, comment);
+        const newComment = await commentService.createComment(roomId, userId, page, content, comment);
         return res.status(201).json({ success: true, data: newComment });
     } catch (error) {
         return res.status(500).json({ success: false, message: error.message });
