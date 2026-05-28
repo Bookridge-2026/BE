@@ -5,9 +5,19 @@
 const { Op } = require("sequelize");
 const db = require("../models");
 
+
+const blockService = require("./block.service");
+
 const sendFriendRequest = async (senderId, receiverId) => {
   if (Number(senderId) === Number(receiverId)) {
     throw new Error("자기 자신에게 친구 요청을 보낼 수 없습니다.");
+  }
+
+  // 차단 여부 확인 (양방향)
+  const isBlocked = await blockService.isBlocked(senderId, receiverId);
+  const isBlockedReverse = await blockService.isBlocked(receiverId, senderId);
+  if (isBlocked || isBlockedReverse) {
+    throw new Error("차단된 사용자에게 친구 요청을 보낼 수 없습니다.");
   }
 
   const receiver = await db.user.findOne({

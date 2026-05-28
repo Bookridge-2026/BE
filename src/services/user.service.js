@@ -1,10 +1,12 @@
 const { Op } = require("sequelize");
 const db = require("../models");
 
+const blockService = require("./block.service");
+
 const getFriendStatus = async (myId, targetId) => {
-  if (Number(myId) === Number(targetId)) {
-    return "ME";
-  }
+  const isBlocked = await blockService.isBlocked(myId, targetId);
+  if (isBlocked) return "BLOCKED";
+  if (Number(myId) === Number(targetId)) return "ME";
 
   const friend = await db.friend.findOne({
     where: {
@@ -14,7 +16,6 @@ const getFriendStatus = async (myId, targetId) => {
       ],
     },
   });
-
   if (friend) return "FRIENDS";
 
   const request = await db.friendRequest.findOne({
@@ -26,13 +27,10 @@ const getFriendStatus = async (myId, targetId) => {
       ],
     },
   });
-
   if (!request) return "NONE";
-
   if (Number(request.senderId) === Number(myId)) {
     return "REQUEST_SENT";
   }
-
   return "REQUEST_RECEIVED";
 };
 
@@ -47,6 +45,7 @@ const searchUserByCode = async (myId, userCode) => {
   }
 
   const friendStatus = await getFriendStatus(myId, user.userId);
+  const isBlocked = friendStatus === "BLOCKED";
 
   return {
     userId: user.userId,
@@ -54,7 +53,7 @@ const searchUserByCode = async (myId, userCode) => {
     userCode: user.userCode,
     profileImageUrl: user.profileImageUrl,
     friendStatus,
-    isBlocked: false,
+    isBlocked,
   };
 };
 
