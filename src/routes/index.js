@@ -5,5 +5,6 @@ router.use('/health', require('./health'));
 router.use('/oauth2', require('./oauth2'));
 router.use("/rooms", require("./room"));
 router.use("/friends", require("./friend"));
+router.use("/users", require("./user"));
 
 module.exports = router;
