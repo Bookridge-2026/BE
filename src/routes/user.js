@@ -10,5 +10,6 @@ passport.use(jwtStrategy);
 const isLogin = passport.authenticate("jwt", { session: false });
 
 router.get("/search", isLogin, userController.searchUserByCode);
+router.get("/:userId/profile", isLogin, userController.getUserProfile);
 
 module.exports = router;
