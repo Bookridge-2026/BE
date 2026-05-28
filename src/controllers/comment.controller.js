@@ -34,18 +34,189 @@ const getPages = async (req, res) => {
     }
 };
 
+
+// -- 코멘트 CRUD -- 
+
+
+/**
+ * @swagger
+ * /api/rooms/{roomId}/comments:
+ *   get:
+ *     summary: 코멘트 목록 조회
+ *     description: 특정 페이지의 코멘트 목록을 조회합니다
+ *     tags: [Comment]
+ *     parameters:
+ *       - in: path
+ *         name: roomId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         example: 1
+ *       - in: query
+ *         name: page
+ *         required: false
+ *         schema:
+ *           type: integer
+ *         example: 159
+ *     responses:
+ *       200:
+ *         description: 성공
+ *         content:
+ *           application/json:
+ *             example:
+ *               success: true
+ *               data:
+ *                 - commentId: 1
+ *                   comment: "오 캡틴 마이 캡틴"
+ *                   content: "오, 선장님! 나의 선장님!"
+ *                   page: 159
+ *                   isDeleted: false
+ *                   member:
+ *                     memberId: 1
+ *                     nickname: "홍길동"
+ *                     color: "#FFB6C1"
+ *                   replyCount: 2
+ */
 const getComments = async (req, res) => {
-    return res.status(200).json({ success: true, message: "준비중" });
+    try {
+        const { roomId } = req.params;
+        const { page } = req.query;   
+        const comments = await commentService.getComments(roomId, page);
+        return res.status(200).json({ success: true, data: comments });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
+    }
 };
+
+/**
+ * @swagger
+ * /api/rooms/{roomId}/comments:
+ *   post:
+ *     summary: 코멘트 작성
+ *     description: 페이지 수 입력 후 책 구절과 코멘트 작성
+ *     tags: [Comment]
+ *     parameters:
+ *       - in: path
+ *         name: roomId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         example: 1
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               page:
+ *                 type: integer
+ *                 example: 159
+ *               content:
+ *                 type: string
+ *                 example: "오, 선장님! 나의 선장님!"
+ *               comment:
+ *                 type: string
+ *                 example: "오 캡틴 마이 캡틴"
+ *     responses:
+ *       201:
+ *         description: 생성 성공
+ */
 const createComment = async (req, res) => {
-    return res.status(200).json({ success: true, message: "준비중" });
+    try {
+        const { roomId } = req.params;
+        const { page, content, comment } = req.body;
+        
+        const userId = req.user.userId;
+        const newComment = await commentService.createComment(roomId, memberId, page, content, comment);
+        return res.status(201).json({ success: true, data: newComment });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
+    }
 };
+
+/**
+ * @swagger
+ * /api/rooms/{roomId}/comments/{commentId}:
+ *   patch:
+ *     summary: 코멘트 수정
+ *     description: 구절(content)은 수정 불가, 코멘트(comment)만 수정 가능
+ *     tags: [Comment]
+ *     parameters:
+ *       - in: path
+ *         name: roomId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         example: 1
+ *       - in: path
+ *         name: commentId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         example: 1
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               comment:
+ *                 type: string
+ *                 example: "수정된 코멘트 내용"
+ *     responses:
+ *       200:
+ *         description: 수정 성공
+ */
 const updateComment = async (req, res) => {
-    return res.status(200).json({ success: true, message: "준비중" });
+    try {
+        const { commentId } = req.params;
+        const { comment } = req.body; 
+        const updated = await commentService.updateComment(commentId, comment);
+        return res.status(200).json({ success: true, data: updated });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
+    }
 };
+  // comment만 받음! content는 수정 X
+
+
+/**
+ * @swagger
+ * /api/rooms/{roomId}/comments/{commentId}:
+ *   delete:
+ *     summary: 코멘트 삭제
+ *     description: 대댓글 있으면 soft delete, 없으면 hard delete
+ *     tags: [Comment]
+ *     parameters:
+ *       - in: path
+ *         name: roomId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         example: 1
+ *       - in: path
+ *         name: commentId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         example: 1
+ *     responses:
+ *       200:
+ *         description: 삭제 성공
+ */
 const deleteComment = async (req, res) => {
-    return res.status(200).json({ success: true, message: "준비중" });
+    try {
+        const { commentId } = req.params;
+        const result = await commentService.deleteComment(commentId);
+        return res.status(200).json({ success: true, message: result });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
+    }
 };
+
+
 const getReplies = async (req, res) => {
     return res.status(200).json({ success: true, message: "준비중" });
 };
@@ -55,6 +226,7 @@ const createReply = async (req, res) => {
 const deleteReply = async (req, res) => {
     return res.status(200).json({ success: true, message: "준비중" });
 };
+
 
 module.exports = {
     getPages,
