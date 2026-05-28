@@ -18,6 +18,8 @@ db.comment = require("./comment.js")(sequelize, Sequelize);
 db.reply = require("./reply.js")(sequelize, Sequelize);    
 db.emojiType = require("./emojiType.js")(sequelize, Sequelize);
 db.emoji = require("./emoji.js")(sequelize, Sequelize);    
+db.friend = require("./friend.js")(sequelize, Sequelize);
+db.friendRequest = require("./friendRequest.js")(sequelize, Sequelize);
 
 
 Object.keys(db).forEach((modelName) => {
