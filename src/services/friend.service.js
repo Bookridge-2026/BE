@@ -1,3 +1,7 @@
+// TODO: 알림 기능 연결
+// 친구 요청 보냄 → receiver에게 FRIEND_REQUEST 알림
+// 친구 요청 수락함 → sender에게 FRIEND_ACCEPTED 알림
+
 const { Op } = require("sequelize");
 const db = require("../models");
 
