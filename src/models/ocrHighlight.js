@@ -2,7 +2,7 @@ const { DataTypes } = require('sequelize');
 
 module.exports = (sequelize) => {
   const OcrHighlight = sequelize.define('ocrHighlight', {
-    ocrHighlight: {
+    ocrHighlightId: {
       type: DataTypes.BIGINT,
       primaryKey: true,
       autoIncrement: true,
@@ -34,7 +34,7 @@ module.exports = (sequelize) => {
 
   OcrHighlight.associate = (models) => {
     OcrHighlight.belongsTo(models.ocrPage, { foreignKey: 'ocrPageId' });
-    OcrHighlight.hasMany(models.ocrComment, { foreignKey: 'ocrHighlightId' })
+    OcrHighlight.hasMany(models.ocrComment, { foreignKey: 'ocrHighlightId', as: 'ocrComments' })
   };
 
   return OcrHighlight;

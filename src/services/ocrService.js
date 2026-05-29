@@ -1,5 +1,5 @@
 const vision = require('@google-cloud/vision');
-const { member: Member, room:Room, ocrPage:OcrPage, book:Book, sequelize } = require('../models');
+const { member: Member, room:Room, ocrPage:OcrPage, book:Book, sequelize, ocrHighlight:OcrHighlight, ocrComment:OcrComment } = require('../models');
 
 const client = new vision.ImageAnnotatorClient();
 
@@ -29,11 +29,6 @@ exports.extractTextFromImage = async (imageBuffer) => {
 
 exports.saveOcr = async (page, text, roomId, userId) => {
 
-  // const user = await User.findByPk(userId);
-  const room = await Room.findByPk(roomId, {
-    include: [{ model:Book, as:'book'}]
-  });
-
   const member = await Member.findOne({ where: { userId } });
 
   if (!member) {
@@ -42,6 +37,10 @@ exports.saveOcr = async (page, text, roomId, userId) => {
     err.status = 404;
     throw err;
   }
+
+  const room = await Room.findByPk(roomId, {
+    include: [{ model:Book, as:'book'}]
+  });
 
   if (!room) {
     const err = new Error('존재하지 않는 방입니다.');
@@ -81,3 +80,116 @@ exports.saveOcr = async (page, text, roomId, userId) => {
   return ocrPage;
   
 };
+
+exports.newOcrComment = async (selectedText, startIndex, endIndex, content, ocrPageId, userId) => {
+
+  const member = await Member.findOne({ where: { userId } });
+
+  if (!member) {
+    const err = new Error('존재하지 않는 멤버입니다.');
+    err.code = 'MEMBER_NOT_FOUND';
+    err.status = 404;
+    throw err;
+  }
+
+  const ocrPage = await OcrPage.findByPk(ocrPageId);
+
+  if (!ocrPage) {
+    const err = new Error('존재하지 않는 ocr페이지입니다.');
+    err.code = 'OCRPAGE_NOT_FOUND';
+    err.status = 404;
+    throw err;
+  }
+
+  if (!content || content.length === 0) {
+    const err = new Error('코멘트를 찾을 수 없습니다.');
+    err.code = 'COMMENT_NOT_FOUND';
+    err.status = 422;
+    throw err;
+  }
+
+  let highlight, ocrComment;
+
+  const newOcrComment = await sequelize.transaction(async (t) => {
+
+    highlight = await OcrHighlight.create({
+      selectedText,
+      startIndex,
+      endIndex,
+      ocrPageId:ocrPageId
+    }, { transaction: t });
+
+    ocrComment = await OcrComment.create({
+      comment: content,
+      memberId:member.memberId,
+      ocrHighlightId: highlight.ocrHighlightId
+    }, { transaction: t });
+  })
+
+  return {
+    highlightId: highlight.ocrHighlightId,
+    selectedText: highlight.selectedText,
+    startIndex: highlight.startIndex,
+    endIndex: highlight.endIndex,
+    ocrCommentId: ocrComment.ocrCommentId,
+    content: ocrComment.comment,
+    color: member.color,
+    createdAt: ocrComment.createdAt,
+  };
+  
+}
+
+exports.existingOcrComment = async(content, highlightId, userId) => {
+
+  const member = await Member.findOne({ where: { userId } });
+
+  if (!member) {
+    const err = new Error('존재하지 않는 멤버입니다.');
+    err.code = 'MEMBER_NOT_FOUND';
+    err.status = 404;
+    throw err;
+  }
+
+  const highlight = await OcrHighlight.findByPk(highlightId);
+
+  if (!highlight) {
+    const err = new Error('존재하지 않는 하이라이트입니다.');
+    err.code = 'HIGHLIGHT_NOT_FOUND';
+    err.status = 404;
+    throw err;
+  }
+
+  if (!content || content.length === 0) {
+    const err = new Error('코멘트를 찾을 수 없습니다.');
+    err.code = 'COMMENT_NOT_FOUND';
+    err.status = 422;
+    throw err;
+  }
+
+  ocrComment = await OcrComment.create({
+    comment: content,
+    memberId:member.memberId,
+    ocrHighlightId: highlight.ocrHighlightId
+  });
+
+  const updatedHighlight = await OcrHighlight.findByPk(highlightId, {
+    include: [{
+      model: OcrComment,
+      as: 'ocrComments',
+      include: [{ model: Member}] 
+    }]
+  });
+
+  return {
+    highlightId: updatedHighlight.ocrHighlightId,
+    selectedText: updatedHighlight.selectedText,
+    startIndex: updatedHighlight.startIndex,
+    endIndex: updatedHighlight.endIndex,
+    ocrComments: updatedHighlight.ocrComments.map(comment => ({
+      ocrCommentId: comment.ocrCommentId,
+      content: comment.comment,
+      color: comment.Member.color,
+      createdAt: comment.createdAt,
+    }))
+  };
+}
