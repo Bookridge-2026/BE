@@ -34,7 +34,7 @@ module.exports = (sequelize) => {
 
   OcrHighlight.associate = (models) => {
     OcrHighlight.belongsTo(models.ocrPage, { foreignKey: 'ocrPageId' });
-    OcrHighlight.hasMany(models.ocrComment, { foreignKey: 'ocrHighlightId' })
+    OcrHighlight.hasMany(models.ocrComment, { foreignKey: 'ocrHighlightId', as: 'ocrComments' })
   };
 
   return OcrHighlight;

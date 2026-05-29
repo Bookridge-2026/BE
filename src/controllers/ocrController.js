@@ -1,4 +1,4 @@
-const { extractTextFromImage, saveOcr, newOcrComment } = require('../services/ocrService');
+const { extractTextFromImage, saveOcr, newOcrComment, existingOcrComment } = require('../services/ocrService');
 
 exports.extractText = async (req, res) => {
   try {
@@ -67,4 +67,29 @@ exports.newOcrComment = async (req, res) => {
       error: { code: err.code },
     });
   }
+}
+
+exports.existingOcrComment = async(req, res) => {
+  try{
+
+    const { content } = req.body;
+    const { highlightId } = req.params;
+    const userId = req.user.userId;
+
+    const result = await existingOcrComment(content, highlightId, userId);
+
+    res.status(200).json({ 
+      success: true, 
+      message: "OCR코멘트가 성공적으로 생성되었습니다.",
+      data: result 
+    });
+
+  } catch (err) {
+    res.status(err.status || 500).json({
+      success: false,
+      message: err.message,
+      error: { code: err.code },
+    });
+  }
+  
 }

@@ -1,4 +1,3 @@
-
 /**
  * @swagger
  * tags:
@@ -9,7 +8,7 @@ const express = require('express');
 const router = express.Router();
 const passport = require('passport');
 const multer = require('multer');                             
-const {extractText, saveOcr, newOcrComment} = require('../controllers/ocrController');
+const {extractText, saveOcr, newOcrComment, existingOcrComment} = require('../controllers/ocrController');
 const { googleStrategy, jwtStrategy } = require('../config/auth.config');
 
 passport.use(googleStrategy);
@@ -198,7 +197,7 @@ router.post('/room/:roomId/ocrSave', isLogin, saveOcr);
 
 /**
  * @swagger
- * /api/ocr/ocrPage/{ocrPageId}/newOcrComment:
+ * /api/ocr/ocrPage/{ocrPageId}/createOcrComment:
  *   post:
  *     summary: 새로운 OCR 코멘트 생성
  *     tags: [OCR]
@@ -333,6 +332,140 @@ router.post('/room/:roomId/ocrSave', isLogin, saveOcr);
  *                       type: string
  *                       example: null
  */
-router.post('/ocrPage/:ocrPageId/newOcrComment', isLogin, newOcrComment)
+router.post('/ocrPage/:ocrPageId/createOcrComment', isLogin, newOcrComment);
+
+/**
+ * @swagger
+ * /api/ocr/highlight/{highlightId}/createOcrComment:
+ *   post:
+ *     summary: 기존 하이라이트에 OCR 코멘트 추가
+ *     tags: [OCR]
+ *     parameters:
+ *       - in: path
+ *         name: highlightId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 하이라이트 ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - content
+ *             properties:
+ *               content:
+ *                 type: string
+ *                 example: "첫 번째 메모 내용"
+ *     responses:
+ *       "200":
+ *         description: OCR 코멘트 생성 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "OCR코멘트가 성공적으로 생성되었습니다."
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     highlightId:
+ *                       type: integer
+ *                       example: 10
+ *                     selectedText:
+ *                       type: string
+ *                       example: "하이라이트할 텍스트"
+ *                     startIndex:
+ *                       type: integer
+ *                       example: 20
+ *                     endIndex:
+ *                       type: integer
+ *                       example: 34
+ *                     ocrComments:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           ocrCommentId:
+ *                             type: integer
+ *                             example: 21
+ *                           content:
+ *                             type: string
+ *                             example: "첫 번째 메모 내용"
+ *                           color:
+ *                             type: string
+ *                             example: "#F6D36B"
+ *                           createdAt:
+ *                             type: string
+ *                             format: date-time
+ *                             example: "2026-05-28T12:00:00.000Z"
+ *       "404":
+ *         description: 멤버 또는 하이라이트를 찾을 수 없음
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "존재하지 않는 멤버입니다."
+ *                 error:
+ *                   type: object
+ *                   properties:
+ *                     code:
+ *                       type: string
+ *                       example: "MEMBER_NOT_FOUND"
+ *       "422":
+ *         description: 코멘트 내용 없음
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "코멘트를 찾을 수 없습니다."
+ *                 error:
+ *                   type: object
+ *                   properties:
+ *                     code:
+ *                       type: string
+ *                       example: "COMMENT_NOT_FOUND"
+ *       "500":
+ *         description: 서버 내부 오류
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Internal Server Error"
+ *                 error:
+ *                   type: object
+ *                   properties:
+ *                     code:
+ *                       type: string
+ *                       example: null
+ */
+router.post('/highlight/:highlightId/createOcrComment', isLogin, existingOcrComment);
+
+
 
 module.exports = router;
