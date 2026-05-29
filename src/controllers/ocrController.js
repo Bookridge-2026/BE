@@ -1,4 +1,6 @@
-const { extractTextFromImage, saveOcr, newOcrComment, existingOcrComment } = require('../services/ocrService');
+const { extractTextFromImage, saveOcr, newOcrComment, existingOcrComment, getOcrHighlights, getOcrComments } = require('../services/ocrService');
+const { broadcast } = require('./sseController');
+
 
 exports.extractText = async (req, res) => {
   try {
@@ -29,7 +31,8 @@ exports.saveOcr = async (req, res) => {
     const { roomId } = req.params;
     const userId = req.user.userId;
 
-    const result = await saveOcr(page, text, roomId, userId);
+    const result = await saveOcr(page, text, roomId, userId); 
+
     res.status(200).json({ 
       success: true, 
       message: "OCR페이지가 정상적으로 생성되었습니다.",
@@ -53,6 +56,8 @@ exports.newOcrComment = async (req, res) => {
     const userId = req.user.userId;
 
     const result = await newOcrComment(selectedText, startIndex, endIndex, content, ocrPageId, userId);
+
+    broadcast(ocrPageId, 'new-highlight', result);
 
     res.status(200).json({ 
       success: true, 
@@ -90,6 +95,49 @@ exports.existingOcrComment = async(req, res) => {
       message: err.message,
       error: { code: err.code },
     });
-  }
-  
+  } 
+}
+
+exports.getOcrHighlights = async(req, res) => {
+  try{
+    const { roomId, ocrPageId } = req.params;
+    const userId = req.user.userId;
+
+    const result = await getOcrHighlights(roomId, ocrPageId, userId);
+
+    res.status(200).json({ 
+      success: true, 
+      message: "해당 OCR 페이지의 하이라이트들을 성공적으로 불러왔습니다.",
+      data: result 
+    });
+
+  } catch (err) {
+    res.status(err.status || 500).json({
+      success: false,
+      message: err.message,
+      error: { code: err.code },
+    });
+  } 
+}
+
+exports.getOcrComments = async(req, res) => {
+  try{
+    const { highlightId } = req.params;
+    const userId = req.user.userId;
+
+    const result = await getOcrComments(highlightId, userId);
+
+    res.status(200).json({ 
+      success: true, 
+      message: "해당 하이라이트의 코멘트들을 성공적으로 불러왔습니다.",
+      data: result 
+    });
+
+  } catch (err) {
+    res.status(err.status || 500).json({
+      success: false,
+      message: err.message,
+      error: { code: err.code },
+    });
+  } 
 }
