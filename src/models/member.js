@@ -39,6 +39,12 @@ module.exports = (sequelize, DataTypes) =>{
                 allowNull: false,
                 comment: "고유색",
             },
+            pokeCount: {
+                type: DataTypes.INTEGER,
+                allowNull: false,
+                defaultValue: 0,
+                comment: "콕 찔린 횟수",
+            },
         },
         {
             tableName: "member",

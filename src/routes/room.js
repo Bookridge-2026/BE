@@ -33,6 +33,10 @@ router.get("/:roomId/members/progress", roomController.getMembersProgress);
 // 멤버 조회
 router.get("/:roomId/members", roomController.getMembers);
 
+// 멤버 콕 찌르기 / 강퇴
+router.post("/:roomId/members/:memberId/poke", isLogin, memberController.pokeMember);
+router.delete("/:roomId/members/:memberId", isLogin, memberController.kickMember);
+
 // 일반 코멘트
 router.get("/:roomId/comments", commentController.getComments);
 router.post("/:roomId/comments", isLogin, commentController.createComment);
