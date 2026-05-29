@@ -2,11 +2,241 @@ const roomService = require("../services/room.service");
 
 /**
  * @swagger
- * /api/rooms/{roomId}:
+ * tags:
+ *   name: Room
+ *   description: 방 관련 API
+ */
+
+// 방 목록 조회
+/**
+ * @swagger
+ * /api/rooms:
  *   get:
- *     summary: 방 기본 정보 조회
- *     description: 방 정보와 책 제목, 출판사 등을 조회합니다
+ *     summary: 방 목록 조회 (검색 + 필터)
+ *     description: 책 제목 키워드 및 방 상태로 필터링하여 방 목록을 조회합니다. (ROOM-02)
  *     tags: [Room]
+ *     parameters:
+ *       - in: query
+ *         name: keyword
+ *         schema:
+ *           type: string
+ *         description: 책 제목 검색어
+ *         example: 해리포터
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [waiting, ongoing, closed, expired]
+ *         description: 방 상태 필터
+ *         example: waiting
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: size
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *     responses:
+ *       200:
+ *         description: 조회 성공
+ *         content:
+ *           application/json:
+ *             example:
+ *               success: true
+ *               data:
+ *                 rooms:
+ *                   - roomId: 1
+ *                     state: "waiting"
+ *                     period: 14
+ *                     atLeastPeople: 3
+ *                     currentMembers: 2
+ *                     detail: "함께 읽어요!"
+ *                     book:
+ *                       isbn: "9788983920690"
+ *                       title: "해리 포터와 마법사의 돌"
+ *                       author: "J.K. 롤링"
+ *                       thumbnail: "https://..."
+ *                 meta:
+ *                   totalCount: 20
+ *                   totalPages: 2
+ *                   currentPage: 1
+ */
+const getRooms = async (req, res) => {
+  try {
+    const { keyword, status, page, size } = req.query;
+    const result = await roomService.getRooms({ keyword, status, page, size });
+    return res.status(200).json({ success: true, data: result });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// 방 생성
+/**
+ * @swagger
+ * /api/rooms:
+ *   post:
+ *     summary: 방 생성
+ *     description: ISBN 기반으로 교환독서 방을 생성합니다. 방장은 자동으로 leader로 등록되며 랜덤 색상이 부여됩니다. (ROOM-01)
+ *     tags: [Room]
+ *     security:
+ *       - Authorization: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - isbn
+ *               - period
+ *               - atLeastPeople
+ *             properties:
+ *               isbn:
+ *                 type: string
+ *                 example: "9788983920690"
+ *               period:
+ *                 type: integer
+ *                 example: 15
+ *                 description: 1~90일
+ *               atLeastPeople:
+ *                 type: integer
+ *                 example: 4
+ *                 description: 최소 인원 (최대 10명)
+ *               poke:
+ *                 type: integer
+ *                 example: 10
+ *                 description: 찌르기 허용 횟수 (기본값 3)
+ *               detail:
+ *                 type: string
+ *                 example: "스포 금지! 10일동안 함께 책 읽어요~~!"
+ *     responses:
+ *       201:
+ *         description: 방 생성 성공
+ *         content:
+ *           application/json:
+ *             example:
+ *               success: true
+ *               message: "방이 생성되었습니다."
+ *               data:
+ *                 roomId: 5
+ *                 state: "waiting"
+ *                 period: 15
+ *                 member:
+ *                   memberId: 10
+ *                   role: "leader"
+ *                   color: "#AECBFA"
+ *       400:
+ *         description: 입력값 오류 또는 ISBN 없음
+ *       401:
+ *         description: 인증 필요
+ */
+const createRoom = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { isbn, period, atLeastPeople, poke, detail } = req.body;
+    const { room, member } = await roomService.createRoom(userId, {
+      isbn,
+      period,
+      atLeastPeople,
+      poke,
+      detail,
+    });
+    return res.status(201).json({
+      success: true,
+      message: "방이 생성되었습니다.",
+      data: {
+        roomId: room.roomId,
+        state: room.state,
+        period: room.period,
+        atLeastPeople: room.atLeastPeople,
+        poke: room.poke,
+        detail: room.detail,
+        member: {
+          memberId: member.memberId,
+          role: member.role,
+          color: member.color,
+        },
+      },
+    });
+  } catch (error) {
+    const status =
+      error.message.includes("필수") || error.message.includes("이어야")
+        ? 400
+        : 500;
+    return res.status(status).json({ success: false, message: error.message });
+  }
+};
+
+// 방 참여
+/**
+ * @swagger
+ * /api/rooms/{roomId}/join:
+ *   post:
+ *     summary: 방 참여
+ *     description: 방에 참여합니다. 중복 참여, 차단 관계, 정원 초과를 검증합니다. (ROOM-03)
+ *     tags: [Room]
+ *     security:
+ *       - Authorization: []
+ *     parameters:
+ *       - in: path
+ *         name: roomId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         example: 1
+ *     responses:
+ *       201:
+ *         description: 참여 성공
+ *         content:
+ *           application/json:
+ *             example:
+ *               success: true
+ *               message: "방에 참여했습니다."
+ *               data:
+ *                 memberId: 12
+ *                 role: "member"
+ *                 color: "#F28B82"
+ *       400:
+ *         description: 중복 참여 / 모집 중이 아님 / 차단 관계
+ *       401:
+ *         description: 인증 필요
+ *       404:
+ *         description: 방 없음
+ */
+const joinRoom = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { roomId } = req.params;
+    const member = await roomService.joinRoom(userId, roomId);
+    return res.status(201).json({
+      success: true,
+      message: "방에 참여했습니다.",
+      data: {
+        memberId: member.memberId,
+        role: member.role,
+        color: member.color,
+      },
+    });
+  } catch (error) {
+    const status = error.message.includes("찾을 수 없습니다") ? 404 : 400;
+    return res.status(status).json({ success: false, message: error.message });
+  }
+};
+
+// 방 시작
+/**
+ * @swagger
+ * /api/rooms/{roomId}/start:
+ *   patch:
+ *     summary: 방 시작 (waiting → ongoing)
+ *     description: 방장이 방을 시작합니다. 최소 인원 충족 여부를 검증합니다. (ROOM-04)
+ *     tags: [Room]
+ *     security:
+ *       - Authorization: []
  *     parameters:
  *       - in: path
  *         name: roomId
@@ -16,30 +246,142 @@ const roomService = require("../services/room.service");
  *         example: 1
  *     responses:
  *       200:
- *         description: 성공
+ *         description: 방 시작 성공
+ *         content:
+ *           application/json:
+ *             example:
+ *               success: true
+ *               message: "방이 시작되었습니다."
+ *               data:
+ *                 roomId: 1
+ *                 state: "ongoing"
+ *                 startDate: "2025-05-29"
+ *       400:
+ *         description: 권한 없음 / 상태 불일치 / 최소 인원 미달
+ *       404:
+ *         description: 방 없음
+ */
+const startRoom = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { roomId } = req.params;
+    const room = await roomService.startRoom(userId, roomId);
+    return res.status(200).json({
+      success: true,
+      message: "방이 시작되었습니다.",
+      data: {
+        roomId: room.roomId,
+        state: room.state,
+        startDate: room.startDate,
+      },
+    });
+  } catch (error) {
+    const status = error.message.includes("찾을 수 없습니다") ? 404 : 400;
+    return res.status(status).json({ success: false, message: error.message });
+  }
+};
+
+// 초대 코드 생성
+/**
+ * @swagger
+ * /api/rooms/{roomId}/invite:
+ *   post:
+ *     summary: 초대 코드 생성
+ *     description: 방 멤버가 초대 링크용 코드를 생성합니다.
+ *     tags: [Room]
+ *     security:
+ *       - Authorization: []
+ *     parameters:
+ *       - in: path
+ *         name: roomId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         example: 1
+ *     responses:
+ *       200:
+ *         description: 초대 코드 생성 성공
+ *         content:
+ *           application/json:
+ *             example:
+ *               success: true
+ *               data:
+ *                 inviteCode: "MToxNzQ4NTAwMDAwMDAw"
+ *                 roomId: 1
+ *       400:
+ *         description: 권한 없음 / 모집 중이 아님
+ *       404:
+ *         description: 방 없음
+ */
+const createInviteCode = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { roomId } = req.params;
+    const result = await roomService.createInviteCode(userId, roomId);
+    return res.status(200).json({ success: true, data: result });
+  } catch (error) {
+    const status = error.message.includes("찾을 수 없습니다") ? 404 : 400;
+    return res.status(status).json({ success: false, message: error.message });
+  }
+};
+
+// 초대 링크 조회
+/**
+ * @swagger
+ * /api/invite/{inviteCode}:
+ *   get:
+ *     summary: 초대 코드로 방 정보 조회
+ *     description: 초대 코드를 통해 참여할 방의 정보를 반환합니다.
+ *     tags: [Room]
+ *     parameters:
+ *       - in: path
+ *         name: inviteCode
+ *         required: true
+ *         schema:
+ *           type: string
+ *         example: "MTo1NzQ4NTAwMDAwMDAw"
+ *     responses:
+ *       200:
+ *         description: 방 정보 반환
  *         content:
  *           application/json:
  *             example:
  *               success: true
  *               data:
  *                 roomId: 1
- *                 state: "ongoing"
- *                 startDate: "2024-01-01"
- *                 period: 30
+ *                 state: "waiting"
+ *                 period: 14
+ *                 atLeastPeople: 3
+ *                 currentMembers: 2
  *                 book:
- *                   title: "죽은 시인의 사회"
- *                   publisher: "서교출판사"
- *                   thumbnail: "https://thumbnail.jpg"
- *                   totalPage: 320
+ *                   isbn: "9788983920690"
+ *                   title: "해리 포터와 마법사의 돌"
+ *                   thumbnail: "https://..."
+ *       400:
+ *         description: 유효하지 않은 코드 / 이미 시작된 방
+ *       404:
+ *         description: 방 없음
  */
+const getRoomByInviteCode = async (req, res) => {
+  try {
+    const { inviteCode } = req.params;
+    const result = await roomService.getRoomByInviteCode(inviteCode);
+    return res.status(200).json({ success: true, data: result });
+  } catch (error) {
+    const status = error.message.includes("찾을 수 없습니다") ? 404 : 400;
+    return res.status(status).json({ success: false, message: error.message });
+  }
+};
+
+// 기존 코드
 const getRoomDetail = async (req, res) => {
-    try {
-        const { roomId } = req.params;
-        const room = await roomService.getRoomDetail(roomId);
-        return res.status(200).json({ success: true, data: room });
-    } catch (error) {
-        return res.status(500).json({ success: false, message: error.message });
-    }
+  try {
+    const { roomId } = req.params;
+    const room = await roomService.getRoomDetail(roomId);
+    return res.status(200).json({ success: true, data: room });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
 };
 
 /**
@@ -47,7 +389,6 @@ const getRoomDetail = async (req, res) => {
  * /api/rooms/{roomId}/members:
  *   get:
  *     summary: 방 멤버 목록 조회
- *     description: 방의 멤버 목록과 색상, 역할, 닉네임 등을 조회합니다
  *     tags: [Room]
  *     parameters:
  *       - in: path
@@ -59,28 +400,15 @@ const getRoomDetail = async (req, res) => {
  *     responses:
  *       200:
  *         description: 성공
- *         content:
- *           application/json:
- *             example:
- *               success: true
- *               data:
- *                 - memberId: 1
- *                   color: "#FFB6C1"
- *                   role: "leader"
- *                   state: "attend"
- *                   maxPage: 160
- *                   user:
- *                     nickname: "홍길동"
- *                     profileImageUrl: "https://profile1.jpg"
  */
 const getMembers = async (req, res) => {
-    try {
-        const { roomId } = req.params;
-        const members = await roomService.getMembers(roomId);
-        return res.status(200).json({ success: true, data: members });
-    } catch (error) {
-        return res.status(500).json({ success: false, message: error.message });
-    }
+  try {
+    const { roomId } = req.params;
+    const members = await roomService.getMembers(roomId);
+    return res.status(200).json({ success: true, data: members });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
 };
 
 /**
@@ -88,7 +416,6 @@ const getMembers = async (req, res) => {
  * /api/rooms/{roomId}/members/progress:
  *   get:
  *     summary: 멤버 진행률 조회
- *     description: 각 멤버가 책을 얼마나 읽었는지 % 로 반환합니다
  *     tags: [Room]
  *     parameters:
  *       - in: path
@@ -100,32 +427,25 @@ const getMembers = async (req, res) => {
  *     responses:
  *       200:
  *         description: 성공
- *         content:
- *           application/json:
- *             example:
- *               success: true
- *               data:
- *                 - memberId: 1
- *                   nickname: "홍길동"
- *                   color: "#FFB6C1"
- *                   maxPage: 160
- *                   totalPage: 320
- *                   progressPercent: 50
- *                 - memberId: 2
- *                   nickname: "정바미"
- *                   color: "#FFD700"
- *                   maxPage: 80
- *                   totalPage: 320
- *                   progressPercent: 25
  */
 const getMembersProgress = async (req, res) => {
-    try {
-        const { roomId } = req.params;
-        const progress = await roomService.getMembersProgress(roomId);
-        return res.status(200).json({ success: true, data: progress });
-    } catch (error) {
-        return res.status(500).json({ success: false, message: error.message });
-    }
+  try {
+    const { roomId } = req.params;
+    const progress = await roomService.getMembersProgress(roomId);
+    return res.status(200).json({ success: true, data: progress });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
 };
 
-module.exports = { getRoomDetail, getMembers, getMembersProgress };
+module.exports = {
+  getRooms,
+  createRoom,
+  joinRoom,
+  startRoom,
+  createInviteCode,
+  getRoomByInviteCode,
+  getRoomDetail,
+  getMembers,
+  getMembersProgress,
+};
