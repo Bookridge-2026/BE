@@ -6,10 +6,7 @@ router.use('/oauth2', require('./oauth2'));
 router.use("/rooms", require("./room"));
 router.use("/friends", require("./friend"));
 router.use("/users", require("./user"));
-<<<<<<< Updated upstream
 router.use("/blocks", require("./block"));
-=======
 router.use("/ocr", require("./ocrRoute"))
->>>>>>> Stashed changes
 
 module.exports = router;
