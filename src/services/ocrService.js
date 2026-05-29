@@ -119,7 +119,7 @@ exports.newOcrComment = async (selectedText, startIndex, endIndex, content, ocrP
     }, { transaction: t });
 
     ocrComment = await OcrComment.create({
-      comment,
+      comment: content,
       memberId:member.memberId,
       ocrHighlightId: highlight.ocrHighlightId
     }, { transaction: t });
@@ -130,14 +130,10 @@ exports.newOcrComment = async (selectedText, startIndex, endIndex, content, ocrP
     selectedText: highlight.selectedText,
     startIndex: highlight.startIndex,
     endIndex: highlight.endIndex,
-    ocrComments: [{
-      ocrCommentId: ocrComment.ocrCommentId,
-      highlightId: highlight.ocrHighlightId,
-      content: ocrComment.comment,
-      color: ocrComment.color,
-      createdAt: ocrComment.createdAt,
-    }]
+    ocrCommentId: ocrComment.ocrCommentId,
+    content: ocrComment.comment,
+    color: member.color,
+    createdAt: ocrComment.createdAt,
   };
   
-
 }

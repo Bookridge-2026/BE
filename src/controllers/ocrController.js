@@ -54,7 +54,11 @@ exports.newOcrComment = async (req, res) => {
 
     const result = await newOcrComment(selectedText, startIndex, endIndex, content, ocrPageId, userId);
 
-
+    res.status(200).json({ 
+      success: true, 
+      message: "새로운 OCR코멘트가 성공적으로 생성되었습니다.",
+      data: result 
+    });
 
   } catch (err) {
     res.status(err.status || 500).json({
