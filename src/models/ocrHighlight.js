@@ -2,7 +2,7 @@ const { DataTypes } = require('sequelize');
 
 module.exports = (sequelize) => {
   const OcrHighlight = sequelize.define('ocrHighlight', {
-    ocrHighlight: {
+    ocrHighlightId: {
       type: DataTypes.BIGINT,
       primaryKey: true,
       autoIncrement: true,
