@@ -27,16 +27,7 @@ exports.extractTextFromImage = async (imageBuffer) => {
   return detections[0].description;
 };
 
-exports.saveOcr = async (page, text, roomId, userId) => {
-
-  const member = await Member.findOne({ where: { userId } });
-
-  if (!member) {
-    const err = new Error('존재하지 않는 멤버입니다.');
-    err.code = 'MEMBER_NOT_FOUND';
-    err.status = 404;
-    throw err;
-  }
+exports.saveOcr = async (page, text, roomId, member) => {
 
   const room = await Room.findByPk(roomId, {
     include: [{ model:Book, as:'book'}]
@@ -81,21 +72,12 @@ exports.saveOcr = async (page, text, roomId, userId) => {
   
 };
 
-exports.newOcrComment = async (selectedText, startIndex, endIndex, content, ocrPageId, userId) => {
-
-  const member = await Member.findOne({ where: { userId } });
-
-  if (!member) {
-    const err = new Error('존재하지 않는 멤버입니다.');
-    err.code = 'MEMBER_NOT_FOUND';
-    err.status = 404;
-    throw err;
-  }
+exports.newOcrComment = async (selectedText, startIndex, endIndex, content, ocrPageId, member) => {
 
   const ocrPage = await OcrPage.findByPk(ocrPageId);
 
   if (!ocrPage) {
-    const err = new Error('존재하지 않는 ocr페이지입니다.');
+    const err = new Error('존재하지 않는 OCR페이지입니다.');
     err.code = 'OCRPAGE_NOT_FOUND';
     err.status = 404;
     throw err;
@@ -139,16 +121,7 @@ exports.newOcrComment = async (selectedText, startIndex, endIndex, content, ocrP
   
 }
 
-exports.existingOcrComment = async(content, highlightId, userId) => {
-
-  const member = await Member.findOne({ where: { userId } });
-
-  if (!member) {
-    const err = new Error('존재하지 않는 멤버입니다.');
-    err.code = 'MEMBER_NOT_FOUND';
-    err.status = 404;
-    throw err;
-  }
+exports.existingOcrComment = async(content, highlightId, member) => {
 
   const highlight = await OcrHighlight.findByPk(highlightId);
 
@@ -182,6 +155,7 @@ exports.existingOcrComment = async(content, highlightId, userId) => {
 
   return {
     highlightId: updatedHighlight.ocrHighlightId,
+    ocrPageId: updatedHighlight.ocrPageId,
     selectedText: updatedHighlight.selectedText,
     startIndex: updatedHighlight.startIndex,
     endIndex: updatedHighlight.endIndex,
@@ -192,4 +166,89 @@ exports.existingOcrComment = async(content, highlightId, userId) => {
       createdAt: comment.createdAt,
     }))
   };
+}
+
+exports.getOcrHighlights = async (ocrPageId) => {
+
+  const ocrPage = await OcrPage.findByPk(ocrPageId, {
+    include:[{
+      model: OcrHighlight,
+      as: 'ocrHighlights'
+    }]
+  });
+
+  if (!ocrPage) {
+    const err = new Error('존재하지 않는 OCR페이지입니다.');
+    err.code = 'OCRPAGE_NOT_FOUND';
+    err.status = 404;
+    throw err;
+  }
+
+  return {
+    ocrPageId: ocrPage.ocrPageId,
+    roomId: ocrPage.roomId,
+    page: ocrPage.page,
+    text: ocrPage.text,
+    createdAt: ocrPage.createdAt,
+    highlights: ocrPage.ocrHighlights.map(highlight => ({
+      highlightId: highlight.ocrHighlightId,
+      selectedText: highlight.selectedText,
+      startIndex: highlight.startIndex,
+      endIndex: highlight.endIndex,
+    }))
+  };
+
+}
+
+exports.getOcrComments = async(highlightId) => {
+
+  const highlight = await OcrHighlight.findByPk(highlightId, {
+    include: [{
+      model: OcrComment,
+      as: 'ocrComments',
+      include: [{ model: Member}] 
+    }]
+  });
+
+  if (!highlight) {
+    const err = new Error('존재하지 않는 하이라이트입니다.');
+    err.code = 'HIGHLIGHT_NOT_FOUND';
+    err.status = 404;
+    throw err;
+  }
+
+  return {
+    highlightId: highlight.ocrHighlightId,
+    ocrPageId: highlight.ocrPageId,
+    selectedText: highlight.selectedText,
+    startIndex: highlight.startIndex,
+    endIndex: highlight.endIndex,
+    ocrComments: highlight.ocrComments.map(comment => ({
+      ocrCommentId: comment.ocrCommentId,
+      content: comment.comment,
+      color: comment.Member.color,
+      createdAt: comment.createdAt,
+    }))
+  };
+}
+
+exports.deleteOcrComment = async(ocrCommentId, member) => {
+  
+  const ocrComment = await OcrComment.findByPk(ocrCommentId);
+
+  if (!ocrComment) {
+    const err = new Error('존재하지 않는 ocr코멘트입니다.');
+    err.code = 'OCRCOMMENT_NOT_FOUND';
+    err.status = 404;
+    throw err;
+  }
+
+  if (ocrComment.memberId != member.memberId) {
+    const err = new Error('해당 코멘트를 삭제할 권한이 없습니다.');
+    err.code = 'FORBIDDEN';
+    err.status = 403;
+    throw err;
+  }
+
+  await ocrComment.destroy();
 }
