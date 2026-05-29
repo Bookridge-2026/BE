@@ -94,6 +94,7 @@ const createRoom = async (
     throw new Error("기간은 1~90일이어야 합니다.");
   if (!atLeastPeople || atLeastPeople < 1 || atLeastPeople > 10)
     throw new Error("최소 인원은 1~10명이어야 합니다.");
+  if (poke && (poke < 1 || poke > 30)) throw new Error("poke는 1~30번만 설정할 수 있습니다.");
 
   // 2) ISBN 기반 Book 동기화 (없으면 카카오 API에서 저장)
   await bookService.syncBookByIsbn(isbn);
@@ -292,9 +293,20 @@ const getRoomDetail = async (roomId) => {
 };
 
 const getMembers = async (roomId) => {
+  const room = await db.room.findOne({ where: { roomId } });
+  if (!room) throw new Error("방을 찾을 수 없습니다.");
+
   const members = await db.member.findAll({
     where: { roomId },
-    attributes: ["memberId", "color", "role", "maxPage", "state"],
+    attributes: [
+      "memberId",
+      "userId",
+      "color",
+      "role",
+      "maxPage",
+      "state",
+      "pokeCount",
+    ],
     include: [
       {
         model: db.user,
@@ -305,7 +317,19 @@ const getMembers = async (roomId) => {
   });
 
   if (!members.length) throw new Error("멤버를 찾을 수 없습니다.");
-  return members;
+
+  return members.map((member) => ({
+    memberId: member.memberId,
+    userId: member.userId,
+    color: member.color,
+    role: member.role,
+    maxPage: member.maxPage,
+    state: member.state,
+    pokeCount: member.pokeCount,
+    poke: room.poke,
+    canKick: member.pokeCount >= room.poke,
+    user: member.user,
+  }));
 };
 
 const getMembersProgress = async (roomId) => {
