@@ -72,6 +72,8 @@ module.exports = (sequelize, DataTypes) =>{
             foreignKey: "memberId",
             as: "emojis",
         });
+
+        Member.hasMany(models.ocrComment, { foreignKey: 'memberId' });
      };
      return Member;
 }
