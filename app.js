@@ -10,10 +10,10 @@ const { sequelize } = require('./src/models');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// DB 연결
+
 sequelize.sync({ force: false })
-    .then(() => console.log('데이터베이스 연결 성공'))
-    .catch((err) => console.error(err));
+     .then(() => console.log('데이터베이스 연결 성공'))
+     .catch((err) => console.error(err));
 
 // 미들웨어
 app.use(cors({
