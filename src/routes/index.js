@@ -9,5 +9,6 @@ router.use("/invite", require("./invite"));
 router.use("/friends", require("./friend"));
 router.use("/users", require("./user"));
 router.use("/blocks", require("./block"));
+router.use("/ocr", require("./ocrRoute"))
 
 module.exports = router;

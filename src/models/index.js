@@ -21,6 +21,8 @@ db.emoji = require("./emoji.js")(sequelize, Sequelize);
 db.friend = require("./friend.js")(sequelize, Sequelize);
 db.friendRequest = require("./friendRequest.js")(sequelize, Sequelize);
 db.userBlock = require("./userBlock.js")(sequelize, Sequelize);
+db.ocrPage = require("./ocrPage.js")(sequelize, Sequelize);
+db.ocrComment = require("./ocrComment.js")(sequelize, Sequelize);
 
 
 Object.keys(db).forEach((modelName) => {
