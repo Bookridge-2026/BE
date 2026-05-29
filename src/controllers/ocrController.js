@@ -1,4 +1,4 @@
-const ocrService = require('../services/ocrService');
+const { extractTextFromImage, saveOcr } = require('../services/ocrService');
 
 exports.extractText = async (req, res) => {
   try {
@@ -10,7 +10,7 @@ exports.extractText = async (req, res) => {
       });
     }
 
-    const text = await ocrService.extractTextFromImage(req.file.buffer); 
+    const text = await extractTextFromImage(req.file.buffer); 
     res.status(200).json({ success: true, data: { text } });
 
   } catch (err) {
@@ -21,3 +21,25 @@ exports.extractText = async (req, res) => {
     });
   }
 };
+
+exports.saveOcr = async (req, res) => {
+  try{
+
+    const { page, text } = req.body;
+    const { roomId } = req.params;
+    const userId = req.user.userId;
+
+    const result = await saveOcr(page, text, roomId, userId);
+    res.status(200).json({ 
+      success: true, 
+      message: "OCR페이지가 정상적으로 생성되었습니다.",
+      data: result });
+  
+  } catch (err) {
+    res.status(err.status || 500).json({
+      success: false,
+      message: err.message,
+      error: { code: err.code },
+    });
+  }
+}

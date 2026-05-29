@@ -7,14 +7,6 @@ module.exports = (sequelize) => {
             primaryKey: true,
             autoIncrement: true,
         },
-        startIndex: {
-            type: DataTypes.INTEGER,
-            allowNull: false,
-        },
-        endIndex: {
-            type: DataTypes.INTEGER,
-            allowNull: false,
-        },
         comment: {
             type: DataTypes.STRING,
             allowNull: false,
@@ -27,12 +19,12 @@ module.exports = (sequelize) => {
                 key: 'memberId',
             },
         },
-        ocrPageId: {
+        ocrHighlightId: {
             type: DataTypes.BIGINT,
             allowNull: false,
             references: {
-                model: 'ocrPage', 
-                key: 'ocrPageId',
+                model: 'ocrHighlight', 
+                key: 'ocrHighlightId',
             },
         },
     }, {
@@ -41,7 +33,7 @@ module.exports = (sequelize) => {
     });
 
     OcrComment.associate = (models) => {
-        OcrComment.belongsTo(models.ocrPage, { foreignKey: 'ocrPageId' });
+        OcrComment.belongsTo(models.ocrHighlight, { foreignKey: 'ocrHighlightId' });
         OcrComment.belongsTo(models.member, { foreignKey: 'memberId' });
     };
 
