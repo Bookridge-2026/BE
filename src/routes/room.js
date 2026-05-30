@@ -12,6 +12,9 @@ const songRecommendationController = require("../controllers/songRecommendation.
 passport.use(jwtStrategy);
 const isLogin = passport.authenticate("jwt", { session: false });
 
+// 참여 중인 방 조회 (홈)
+router.get("/joined", isLogin, roomController.getJoinedRooms);
+
 // 방 목록 / 생성
 // GET  /api/rooms?keyword=해리포터&status=waiting&page=1
 router.get("/", roomController.getRooms);
