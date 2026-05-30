@@ -2,3 +2,5 @@ node_modules/
 .env
 .git
 google-vision-key.json
+src/utils/jwtCreate.js
+seed.js
