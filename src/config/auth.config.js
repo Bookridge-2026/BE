@@ -60,7 +60,7 @@ const googleStrategy = new GoogleStrategy(
   {
     clientID: process.env.PASSPORT_GOOGLE_CLIENT_ID,
     clientSecret: process.env.PASSPORT_GOOGLE_CLIENT_SECRET,
-    callbackURL: '/api/oauth2/callback/google',
+    callbackURL: process.env.GOOGLE_CALLBACK_URL,
     scope: ['email', 'profile'],
   },
   async (accessToken, refreshToken, profile, cb) => {
