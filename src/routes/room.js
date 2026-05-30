@@ -13,6 +13,8 @@ const { jwtStrategy } = require("../config/auth.config");
 passport.use(jwtStrategy);
 const isLogin = passport.authenticate("jwt", { session: false });
 
+// 참여 중인 방 조회 (홈)
+router.get("/joined", isLogin, roomController.getJoinedRooms);
 
 // 방 세부 기본
 router.get("/:roomId", roomController.getRoomDetail);
@@ -40,5 +42,6 @@ router.delete("/:roomId/comments/:commentId/replies/:replyId", isLogin, commentC
 router.get("/:roomId/reactions", emojiController.getReactions);
 router.post("/:roomId/reactions", isLogin, emojiController.addReaction);
 router.delete("/:roomId/reactions/:emojiId", isLogin, emojiController.removeReaction);
+
 
 module.exports = router;
