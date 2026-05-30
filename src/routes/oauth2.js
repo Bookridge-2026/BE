@@ -133,14 +133,8 @@ router.get(
     failureRedirect: '/login-failed',
   }),
   (req, res) => {
-    res.status(200).json({
-      resultType: 'SUCCESS',
-      success: {
-        message: 'Google 로그인 성공!',
-        tokens: req.user,
-        data: req.user.user.name,
-      },
-    });
+    const { accessToken, refreshToken } = req.user;
+    res.redirect(`${process.env.FRONTEND_URL}?accessToken=${accessToken}&refreshToken=${refreshToken}`);
   }
 );
 
