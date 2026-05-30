@@ -438,6 +438,81 @@ const getMembersProgress = async (req, res) => {
   }
 };
 
+/**
+ * @swagger
+ * /api/rooms/joined:
+ *   get:
+ *     summary: 참여 중인 방 목록 조회
+ *     description: 현재 로그인한 유저가 참여 중인 방 목록을 반환합니다 (방 멤버 상태가 attend인 경우)
+ *     tags: [Room]
+ *     security:
+ *       - Authorization: []
+ *     responses:
+ *       200:
+ *         description: 성공
+ *         content:
+ *           application/json:
+ *             example:
+ *               success: true
+ *               data:
+ *                 - roomId: 1
+ *                   state: "ongoing"
+ *                   book:
+ *                     title: "앵무새 죽이기"
+ *                     author: "Harper Lee"
+ *                     publisher: "열린 책들"
+ *                     thumbnail: "https://image.url/book.jpg"
+ *                   period: 14
+ *                   daysLeft: 5
+ *                   minMembers: 3
+ *                   progressRate: 32
+ *                   maxReadPage: 102
+ *                   totalPages: 320
+ *                   memberProfiles:
+ *                     - profileImage: "https://image.url/user1.jpg"
+ *                       color: "#FF0000"
+ *                     - profileImage: "https://image.url/user2.jpg"
+ *                       color: "#0000FF"
+ *                 - roomId: 2
+ *                   state: "waiting"
+ *                   book:
+ *                     title: "채식주의자"
+ *                     author: "한강"
+ *                     publisher: "창비"
+ *                     thumbnail: "https://image.url/book2.jpg"
+ *                   period: 7
+ *                   minMembers: 2
+ *                   progressRate: 0
+ *                   maxReadPage: 0
+ *                   totalPages: 247
+ *                   memberProfiles:
+ *                     - profileImage: "https://image.url/user3.jpg"
+ *                       color: "#00FF00"
+ *       401:
+ *         description: 인증 실패 (토큰 없음 또는 만료)
+ *         content:
+ *           application/json:
+ *             example:
+ *               success: false
+ *               message: "Unauthorized"
+ *       500:
+ *         description: 서버 오류
+ *         content:
+ *           application/json:
+ *             example:
+ *               success: false
+ *               message: "에러 메시지"
+ */
+const getJoinedRooms = async (req, res) => {
+    try {
+        const userId = req.user.userId;
+        const rooms = await roomService.getJoinedRooms(userId);
+        return res.status(200).json({ success: true, data: rooms });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 module.exports = {
   getRooms,
   createRoom,
@@ -448,4 +523,5 @@ module.exports = {
   getRoomDetail,
   getMembers,
   getMembersProgress,
+  getJoinedRooms,
 };

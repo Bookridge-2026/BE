@@ -25,6 +25,7 @@ const searchBooks = async (keyword, page = 1, size = 10) => {
     thumbnail: doc.thumbnail,
     url: doc.url,
     datetime: doc.datetime,
+    content: doc.contents || null,
     totalPage: 0,
   }));
 
@@ -65,6 +66,7 @@ const syncBookByIsbn = async (isbn) => {
     publisher: doc.publisher,
     translator: doc.translators.join(", ") || null,
     thumbnail: doc.thumbnail,
+    content: doc.contents || null,
     totalPage: 0,
   });
 

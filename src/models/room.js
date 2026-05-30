@@ -59,6 +59,11 @@ module.exports = (sequelize, DataTypes) => {
             as: "members",
         });
 
+        Room.hasMany(models.member, {
+            foreignKey: "roomId",
+            as: "allMembers",
+        });
+
     };
 
     return Room;

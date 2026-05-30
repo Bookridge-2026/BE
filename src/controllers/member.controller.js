@@ -50,7 +50,7 @@ const memberService = require("../services/member.service");
  *                     pokeCount:
  *                       type: integer
  *                       example: 1
- *                     pokeLimit:
+ *                     poke:
  *                       type: integer
  *                       example: 3
  *                     canKick:
