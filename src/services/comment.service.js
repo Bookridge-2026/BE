@@ -1,4 +1,5 @@
 const db = require("../models");
+const notificationService = require("./notification.service");
 
 const getMemberByUserId = async (roomId, userId) => {
     const member = await db.member.findOne({
@@ -113,6 +114,13 @@ const createComment = async (roomId, userId, page, content, comment) => {
         isDeleted: false,
     });
 
+    await notificationService.createCommentNotification({
+        comment: newComment,
+        senderMemberId: member.memberId,
+
+        
+    }).catch(console.error);
+
     return newComment;
 };
 
@@ -196,6 +204,12 @@ const createReply = async (roomId, userId, commentId, content) => {
         memberId: member.memberId,  
         commentId,
     });
+
+    await notificationService.createReplyNotification({
+        reply,
+        senderMemberId: member.memberId,
+    }).catch(console.error);
+
     return reply;
 };
 

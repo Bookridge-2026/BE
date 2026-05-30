@@ -1,5 +1,5 @@
 const db = require("../models");
-
+const notificationService = require("./notification.service");
 
 const getMemberByUserId = async (roomId, userId) => {
     const member = await db.member.findOne({
@@ -81,11 +81,21 @@ const addReaction = async (roomId, userId, emojiTypeId, page) => {
         return { toggled: true, emoji: existing };
     }
 
+    await notificationService.createEmojiNotification({
+            emoji: existing,
+            senderMemberId: member.memberId,
+        }).catch(console.error);
+
     const emoji = await db.emoji.create({
         memberId: member.memberId,
         emojiTypeId,
         page,
     });
+     await notificationService.createEmojiNotification({
+        emoji,
+        senderMemberId: member.memberId,
+    }).catch(console.error);
+    
     return { toggled: true, emoji };
 };
 
