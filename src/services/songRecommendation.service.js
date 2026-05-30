@@ -19,6 +19,7 @@ const generateSongRecommendations = async (roomId) => {
 
   const existing = await db.songRecommendation.findAll({
     where: { roomId },
+    order: [["createdAt", "ASC"]],
   });
 
   if (existing.length > 0) {
@@ -30,9 +31,13 @@ const generateSongRecommendations = async (roomId) => {
 
   const songs = await fetchSongsFromGPT(room.book);
 
+  if (songs.length < 5) {
+    throw new Error("노래 추천은 최소 5곡 이상이어야 합니다.");
+  }
+
   const songsWithUrl = await Promise.all(
     songs.slice(0, 5).map(async (song) => {
-      const url = await fetchYoutubeUrl(`${song.title} ${song.artist}`);
+      const url = await fetchYoutubeUrl(`${song.artist} ${song.title} MV`);
       return { ...song, url };
     })
   );
@@ -52,7 +57,6 @@ const generateSongRecommendations = async (roomId) => {
   };
 };
 
-
 // GPT로 노래 추천 목록 가져오기
 const fetchSongsFromGPT = async (book) => {
   const prompt = `
@@ -63,6 +67,7 @@ const fetchSongsFromGPT = async (book) => {
 책 제목: ${book.title}
 저자: ${book.author}
 줄거리: ${book.content || "줄거리 정보 없음"}
+
 응답 형식:
 {
   "recommendations": [
@@ -77,8 +82,9 @@ const fetchSongsFromGPT = async (book) => {
       model: "gpt-4o-mini",
       messages: [
         {
-            role: "system",
-            content: "너는 책 분위기에 맞는 한국 노래를 추천하는 음악 큐레이터야. " +
+          role: "system",
+          content:
+            "너는 책 분위기에 맞는 한국 노래를 추천하는 음악 큐레이터야. " +
             "반드시 한국 노래만 추천하고, 최신 트렌드 곡과 시대를 초월한 명곡을 균형 있게 섞어서 추천해. " +
             "항상 JSON 형식으로만 응답해.",
         },
@@ -109,7 +115,6 @@ const fetchSongsFromGPT = async (book) => {
   return songs;
 };
 
-
 // YouTube Data API v3로 노래 검색 후 첫 번째 영상 URL 반환
 const fetchYoutubeUrl = async (query) => {
   try {
@@ -130,12 +135,12 @@ const fetchYoutubeUrl = async (query) => {
     const videoId = response.data.items?.[0]?.id?.videoId;
     return videoId ? `https://www.youtube.com/watch?v=${videoId}` : null;
   } catch {
-    // YouTube 조회 실패해도 노래 추천 자체는 살림
+     // YouTube 조회 실패해도 노래 추천 자체는 살림
     return null;
   }
 };
 
-
+// 저장된 추천 중 랜덤 1곡 조회
 const getRandomSongRecommendation = async (roomId) => {
   const recommendations = await db.songRecommendation.findAll({
     where: { roomId },
@@ -145,25 +150,33 @@ const getRandomSongRecommendation = async (roomId) => {
     throw new Error("저장된 노래 추천이 없습니다.");
   }
 
-  return recommendations[Math.floor(Math.random() * recommendations.length)];
+  const random =
+    recommendations[Math.floor(Math.random() * recommendations.length)];
+
+  return formatRecommendation(random);
 };
 
+// 저장된 추천 목록 조회
 const getSongRecommendations = async (roomId) => {
   const recommendations = await db.songRecommendation.findAll({
     where: { roomId },
     order: [["createdAt", "DESC"]],
   });
 
-  return { recommendations };
+  return {
+    recommendations: formatRecommendations(recommendations),
+  };
 };
 
+const formatRecommendation = (record) => ({
+  songRecommendationId: record.songRecommendationId,
+  title: record.title,
+  artist: record.artist,
+  url: record.url ?? null,
+});
+
 const formatRecommendations = (records) =>
-  records.map((r) => ({
-    songRecommendationId: r.songRecommendationId,
-    title: r.title,
-    artist: r.artist,
-    url: r.url ?? null,
-  }));
+  records.map((record) => formatRecommendation(record));
 
 module.exports = {
   generateSongRecommendations,

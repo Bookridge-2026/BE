@@ -118,6 +118,10 @@ const generateSongRecommendations = async (req, res) => {
  *                     artist:
  *                       type: string
  *                       example: 아이유
+ *                     url:
+ *                       type: string
+ *                       nullable: true
+ *                       example: https://www.youtube.com/watch?v=...
  *                     createdAt:
  *                       type: string
  *                       format: date-time
@@ -136,15 +140,11 @@ const getRandomSongRecommendation = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      data: {
-        songRecommendationId: recommendation.songRecommendationId,
-        title: recommendation.title,
-        artist: recommendation.artist,
-        createdAt: recommendation.createdAt,
-      },
+      data: recommendation,
     });
   } catch (error) {
     const status = error.message === "저장된 노래 추천이 없습니다." ? 404 : 500;
+
     return res.status(status).json({
       success: false,
       message: error.message,
