@@ -7,6 +7,7 @@ const commentController = require("../controllers/comment.controller");
 const emojiController = require("../controllers/emoji.controller");
 const memberController = require("../controllers/member.controller");
 const roomController = require("../controllers/room.controller");
+const songRecommendationController = require("../controllers/songRecommendation.controller");
 
 passport.use(jwtStrategy);
 const isLogin = passport.authenticate("jwt", { session: false });
@@ -24,6 +25,11 @@ router.post("/:roomId/join", isLogin, roomController.joinRoom);
 router.patch("/:roomId/start", isLogin, roomController.startRoom);
 // POST  /api/rooms/:roomId/invite
 router.post("/:roomId/invite", isLogin, roomController.createInviteCode);
+
+// 노래 추천
+router.post("/:roomId/songs/recommendations", isLogin, songRecommendationController.generateSongRecommendations);
+router.get("/:roomId/songs/recommendations/random", isLogin, songRecommendationController.getRandomSongRecommendation);
+router.get("/:roomId/songs/recommendations", isLogin, songRecommendationController.getSongRecommendations);
 
 // 방 세부 기본
 router.get("/:roomId", roomController.getRoomDetail);
