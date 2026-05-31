@@ -10,7 +10,7 @@ module.exports = (sequelize, DataTypes) =>{
                 comment: "멤버아이디",
             },
             state:{
-                type : DataTypes.ENUM("invited","attend"),
+                type : DataTypes.ENUM("invited","attend","pending"),
                 allowNull: false,
                 comment:"상태",
             },

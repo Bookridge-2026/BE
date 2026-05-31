@@ -188,11 +188,11 @@ const joinRoom = async (userId, roomId) => {
   const usedColors = room.members.map((m) => m.color);
   const color = pickRandomColor(usedColors);
 
-  // 6) 멤버 등록
+  // 6) 멤버 등록 (pending 상태로 저장 - 방장 수락 대기)
   const member = await db.member.create({
     userId,
     roomId,
-    state: "attend",
+    state: "pending",
     particTime: new Date(),
     role: "member",
     ocrChance: 5,
@@ -201,6 +201,79 @@ const joinRoom = async (userId, roomId) => {
   });
 
   return member;
+};
+
+// 초대 수락
+const acceptInvite = async (userId, roomId) => {
+  const member = await db.member.findOne({
+    where: { roomId, userId, state: "invited" },
+  });
+  if (!member) throw new Error("초대받은 멤버를 찾을 수 없습니다.");
+
+  await member.update({ state: "attend" });
+  return member;
+};
+
+// 초대 거절
+const rejectInvite = async (userId, roomId) => {
+  const member = await db.member.findOne({
+    where: { roomId, userId, state: "invited" },
+  });
+  if (!member) throw new Error("초대받은 멤버를 찾을 수 없습니다.");
+
+  await member.destroy();
+};
+
+// 입장 요청 수락
+const acceptMember = async (leaderId, roomId, targetUserId) => {
+  // 1) 방 존재 확인
+  const room = await db.room.findOne({ where: { roomId } });
+  if (!room) throw new Error("방을 찾을 수 없습니다.");
+
+  // 2) 방 상태 확인
+  if (room.state !== "waiting") throw new Error("모집 중인 방이 아닙니다.");
+
+  // 3) 방장 확인
+  const leaderMember = await db.member.findOne({
+    where: { roomId, userId: leaderId, role: "leader" },
+  });
+  if (!leaderMember) throw new Error("방장만 수락할 수 있습니다.");
+
+  // 4) 대상 멤버 확인 (pending 상태인지)
+  const targetMember = await db.member.findOne({
+    where: { roomId, userId: targetUserId, state: "pending" },
+  });
+  if (!targetMember) throw new Error("입장 요청한 멤버를 찾을 수 없습니다.");
+
+  // 5) attend로 변경
+  await targetMember.update({ state: "attend" });
+
+  return targetMember;
+};
+
+// 입장 요청 거절
+const rejectMember = async (leaderId, roomId, targetUserId) => {
+  // 1) 방 존재 확인
+  const room = await db.room.findOne({ where: { roomId } });
+  if (!room) throw new Error("방을 찾을 수 없습니다.");
+
+  // 2) 방 상태 확인
+  if (room.state !== "waiting") throw new Error("모집 중인 방이 아닙니다.");
+
+  // 3) 방장 확인
+  const leaderMember = await db.member.findOne({
+    where: { roomId, userId: leaderId, role: "leader" },
+  });
+  if (!leaderMember) throw new Error("방장만 거절할 수 있습니다.");
+
+  // 4) 대상 멤버 확인 (pending 상태인지)
+  const targetMember = await db.member.findOne({
+    where: { roomId, userId: targetUserId, state: "pending" },
+  });
+  if (!targetMember) throw new Error("입장 요청한 멤버를 찾을 수 없습니다.");
+
+  // 5) 멤버 삭제
+  await targetMember.destroy();
 };
 
 // 방 시작 (waiting → ongoing)
@@ -705,6 +778,10 @@ module.exports = {
   getRooms,
   createRoom,
   joinRoom,
+  acceptInvite,
+  rejectInvite,
+  acceptMember,
+  rejectMember,
   startRoom,
   createInviteCode,
   getRoomByInviteCode,

@@ -45,6 +45,14 @@ router.get("/:roomId/members/progress", roomController.getMembersProgress);
 // 멤버 조회
 router.get("/:roomId/members", roomController.getMembers);
 
+// 초대 수락 / 거절 (본인이 직접)
+router.patch("/:roomId/invite/accept", isLogin, roomController.acceptInvite);
+router.patch("/:roomId/invite/reject", isLogin, roomController.rejectInvite);
+
+// 입장 요청 수락 / 거절 (방장이)
+router.patch("/:roomId/users/:userId/accept", isLogin, roomController.acceptMember);
+router.patch("/:roomId/users/:userId/reject", isLogin, roomController.rejectMember);
+
 // 멤버 콕 찌르기 / 강퇴
 router.post("/:roomId/members/:memberId/poke", isLogin, memberController.pokeMember);
 router.delete("/:roomId/members/:memberId", isLogin, memberController.kickMember);

@@ -628,6 +628,218 @@ const getJoinedRooms = async (req, res) => {
  *       500:
  *         description: 서버 오류
  */
+/**
+ * @swagger
+ * /api/rooms/{roomId}/invite/accept:
+ *   patch:
+ *     summary: 초대 수락
+ *     description: 초대받은 본인이 초대를 수락합니다. state가 invited에서 attend로 변경됩니다.
+ *     tags: [Room]
+ *     security:
+ *       - Authorization: []
+ *     parameters:
+ *       - in: path
+ *         name: roomId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         example: 1
+ *     responses:
+ *       200:
+ *         description: 수락 성공
+ *         content:
+ *           application/json:
+ *             example:
+ *               success: true
+ *               message: "초대를 수락했습니다."
+ *               data:
+ *                 memberId: 5
+ *                 userId: 2
+ *                 state: "attend"
+ *       400:
+ *         description: 초대받은 멤버 없음
+ *       404:
+ *         description: 방 없음
+ */
+const acceptInvite = async (req, res) => {
+    try {
+        const userId = req.user.userId;
+        const { roomId } = req.params;
+
+        const member = await roomService.acceptInvite(userId, roomId);
+        return res.status(200).json({
+            success: true,
+            message: "초대를 수락했습니다.",
+            data: {
+                memberId: member.memberId,
+                userId: member.userId,
+                state: member.state,
+            },
+        });
+    } catch (error) {
+        const status = error.message.includes("찾을 수 없습니다") ? 404 : 400;
+        return res.status(status).json({ success: false, message: error.message });
+    }
+};
+
+/**
+ * @swagger
+ * /api/rooms/{roomId}/invite/reject:
+ *   patch:
+ *     summary: 초대 거절
+ *     description: 초대받은 본인이 초대를 거절합니다. 멤버 row가 삭제됩니다.
+ *     tags: [Room]
+ *     security:
+ *       - Authorization: []
+ *     parameters:
+ *       - in: path
+ *         name: roomId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         example: 1
+ *     responses:
+ *       200:
+ *         description: 거절 성공
+ *         content:
+ *           application/json:
+ *             example:
+ *               success: true
+ *               message: "초대를 거절했습니다."
+ *       400:
+ *         description: 초대받은 멤버 없음
+ *       404:
+ *         description: 방 없음
+ */
+const rejectInvite = async (req, res) => {
+    try {
+        const userId = req.user.userId;
+        const { roomId } = req.params;
+
+        await roomService.rejectInvite(userId, roomId);
+        return res.status(200).json({
+            success: true,
+            message: "초대를 거절했습니다.",
+        });
+    } catch (error) {
+        const status = error.message.includes("찾을 수 없습니다") ? 404 : 400;
+        return res.status(status).json({ success: false, message: error.message });
+    }
+};
+
+/**
+ * @swagger
+ * /api/rooms/{roomId}/users/{userId}/accept:
+ *   patch:
+ *     summary: 입장 요청 수락
+ *     description: 방장이 pending 상태인 멤버의 입장 요청을 수락합니다. 수락 시 state가 attend로 변경됩니다.
+ *     tags: [Room]
+ *     security:
+ *       - Authorization: []
+ *     parameters:
+ *       - in: path
+ *         name: roomId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         example: 1
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 수락할 유저의 userId
+ *         example: 3
+ *     responses:
+ *       200:
+ *         description: 수락 성공
+ *         content:
+ *           application/json:
+ *             example:
+ *               success: true
+ *               message: "입장 요청을 수락했습니다."
+ *               data:
+ *                 memberId: 5
+ *                 userId: 3
+ *                 state: "attend"
+ *       400:
+ *         description: 권한 없음 / 방 상태 불일치 / 대상 없음
+ *       404:
+ *         description: 방 없음
+ */
+const acceptMember = async (req, res) => {
+    try {
+        const leaderId = req.user.userId;
+        const { roomId, userId } = req.params;
+
+        const member = await roomService.acceptMember(leaderId, roomId, userId);
+        return res.status(200).json({
+            success: true,
+            message: "입장 요청을 수락했습니다.",
+            data: {
+                memberId: member.memberId,
+                userId: member.userId,
+                state: member.state,
+            },
+        });
+    } catch (error) {
+        const status = error.message.includes("찾을 수 없습니다") ? 404 : 400;
+        return res.status(status).json({ success: false, message: error.message });
+    }
+};
+
+/**
+ * @swagger
+ * /api/rooms/{roomId}/users/{userId}/reject:
+ *   patch:
+ *     summary: 입장 요청 거절
+ *     description: 방장이 pending 상태인 멤버의 입장 요청을 거절합니다. 거절 시 멤버 row가 삭제됩니다.
+ *     tags: [Room]
+ *     security:
+ *       - Authorization: []
+ *     parameters:
+ *       - in: path
+ *         name: roomId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         example: 1
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 거절할 유저의 userId
+ *         example: 3
+ *     responses:
+ *       200:
+ *         description: 거절 성공
+ *         content:
+ *           application/json:
+ *             example:
+ *               success: true
+ *               message: "입장 요청을 거절했습니다."
+ *       400:
+ *         description: 권한 없음 / 방 상태 불일치 / 대상 없음
+ *       404:
+ *         description: 방 없음
+ */
+const rejectMember = async (req, res) => {
+    try {
+        const leaderId = req.user.userId;
+        const { roomId, userId } = req.params;
+
+        await roomService.rejectMember(leaderId, roomId, userId);
+        return res.status(200).json({
+            success: true,
+            message: "입장 요청을 거절했습니다.",
+        });
+    } catch (error) {
+        const status = error.message.includes("찾을 수 없습니다") ? 404 : 400;
+        return res.status(status).json({ success: false, message: error.message });
+    }
+};
+
 const getMyRooms = async (req, res) => {
     try {
         const userId = req.user.userId;
@@ -650,6 +862,10 @@ module.exports = {
   getRooms,
   createRoom,
   joinRoom,
+  acceptInvite,
+  rejectInvite,
+  acceptMember,
+  rejectMember,
   startRoom,
   createInviteCode,
   getRoomByInviteCode,
