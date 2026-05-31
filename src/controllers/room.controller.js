@@ -137,13 +137,14 @@ const getRooms = async (req, res) => {
 const createRoom = async (req, res) => {
   try {
     const userId = req.user.userId;
-    const { isbn, period, atLeastPeople, poke, detail } = req.body;
-    const { room, member } = await roomService.createRoom(userId, {
+    const { isbn, period, atLeastPeople, poke, detail, totalPage } = req.body;
+    const { room, member, book } = await roomService.createRoom(userId, {
       isbn,
       period,
       atLeastPeople,
       poke,
       detail,
+      totalPage,
     });
     return res.status(201).json({
       success: true,
@@ -155,6 +156,11 @@ const createRoom = async (req, res) => {
         atLeastPeople: room.atLeastPeople,
         poke: room.poke,
         detail: room.detail,
+        book: {
+          isbn: book.isbn,
+          title: book.title,
+          totalPage: book.totalPage,
+        },
         member: {
           memberId: member.memberId,
           role: member.role,
@@ -504,13 +510,13 @@ const getMembersProgress = async (req, res) => {
  *               message: "에러 메시지"
  */
 const getJoinedRooms = async (req, res) => {
-    try {
-        const userId = req.user.userId;
-        const rooms = await roomService.getJoinedRooms(userId);
-        return res.status(200).json({ success: true, data: rooms });
-    } catch (error) {
-        return res.status(500).json({ success: false, message: error.message });
-    }
+  try {
+    const userId = req.user.userId;
+    const rooms = await roomService.getJoinedRooms(userId);
+    return res.status(200).json({ success: true, data: rooms });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
 };
 
 module.exports = {
