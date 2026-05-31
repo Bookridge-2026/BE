@@ -70,6 +70,60 @@ const getUserProfile = async (myId, targetUserId) => {
   const friendStatus = await getFriendStatus(myId, user.userId);
   const isBlocked = friendStatus === "BLOCKED";
 
+  const recentMember = await db.member.findOne({
+    where: { userId: targetUserId },
+    include: [
+      {
+        model: db.room,
+        as: "room",
+        where: { state: "ongoing" },
+        attributes: ["roomId"],
+        include: [
+          {
+            model: db.book,
+            as: "book",
+            attributes: ["title"],
+          },
+        ],
+      },
+    ],
+    order: [["particTime", "DESC"]],
+  });
+
+  const roomBooks = await db.member.findAll({
+    where: { userId: targetUserId },
+    include: [
+      {
+        model: db.room,
+        as: "room",
+        where: { state: { [Op.in]: ["ongoing", "closed"] } },
+        attributes: ["roomId", "state", "startDate"],
+        include: [
+          {
+            model: db.book,
+            as: "book",
+            attributes: ["title", "author"],
+          },
+        ],
+      },
+    ],
+    order: [["particTime", "DESC"]],
+  });
+
+  const books = roomBooks
+    .filter((member) => member.room && member.room.book)
+    .map((member) => ({
+      roomId: member.room.roomId,
+      state: member.room.state,
+      startDate: member.room.startDate,
+      title: member.room.book.title,
+      author: member.room.book.author,
+    }));
+
+  const uniqueBooks = Array.from(
+    new Map(books.map((book) => [`${book.title}|${book.author}`, book])).values(),
+  );
+
   return {
     userId: user.userId,
     nickname: user.nickname,
@@ -77,10 +131,8 @@ const getUserProfile = async (myId, targetUserId) => {
     userCode: user.userCode,
     friendStatus,
     isBlocked,
-
-    // TODO: 방/책 구현 후 member-room-book 조인으로 연결
-    recentBookTitle: null,
-    books: [],
+    recentBookTitle: recentMember?.room?.book?.title ?? null,
+    books: uniqueBooks,
   };
 };
 

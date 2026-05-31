@@ -3,3 +3,4 @@ node_modules/
 .git
 google-vision-key.json
 src/utils/jwtCreate.js
+seed.js

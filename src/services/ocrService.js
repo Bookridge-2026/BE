@@ -30,6 +30,13 @@ exports.extractTextFromImage = async (imageBuffer) => {
 
 exports.saveOcr = async (page, text, roomId, member) => {
 
+  if (member.ocrChance <= 0) {
+    const err = new Error('ocr페이지 생성 횟수를 전부 소진했습니다.');
+    err.code = 'OCR_CHANCE_EXHAUSTED';
+    err.status = 403;
+    throw err;
+  }
+
   const room = await Room.findByPk(roomId, {
     include: [{ model:Book, as:'book'}]
   });
@@ -84,6 +91,15 @@ exports.newOcrComment = async (selectedText, startIndex, endIndex, content, ocrP
     throw err;
   }
 
+  const existingHighlight = await OcrHighlight.findOne({
+    where: { startIndex, endIndex, ocrPageId }
+  });
+
+  if(existingHighlight){
+    const result = await exports.existingOcrComment(content, existingHighlight.ocrHighlightId, member);
+    return result;
+  }
+
   if (!content || content.length === 0) {
     const err = new Error('코멘트를 찾을 수 없습니다.');
     err.code = 'COMMENT_NOT_FOUND';
@@ -117,13 +133,16 @@ exports.newOcrComment = async (selectedText, startIndex, endIndex, content, ocrP
 
   return {
     highlightId: highlight.ocrHighlightId,
+    ocrPageId: ocrPage.ocrPageId,
     selectedText: highlight.selectedText,
     startIndex: highlight.startIndex,
     endIndex: highlight.endIndex,
-    ocrCommentId: ocrComment.ocrCommentId,
-    content: ocrComment.comment,
-    color: member.color,
-    createdAt: ocrComment.createdAt,
+    ocrComments: [{
+      ocrCommentId: ocrComment.ocrCommentId,
+      content: ocrComment.comment,
+      color: member.color,
+      createdAt: ocrComment.createdAt,
+    }]
   };
   
 }
@@ -146,7 +165,7 @@ exports.existingOcrComment = async(content, highlightId, member) => {
     throw err;
   }
 
-  ocrComment = await OcrComment.create({
+  const ocrComment = await OcrComment.create({
     comment: content,
     memberId:member.memberId,
     ocrHighlightId: highlight.ocrHighlightId

@@ -25,6 +25,8 @@ db.ocrPage = require("./ocrPage.js")(sequelize, Sequelize);
 db.ocrComment = require("./ocrComment.js")(sequelize, Sequelize);
 db.ocrHighlight = require("./ocrHighlight.js")(sequelize, Sequelize);
 db.notification = require("./notification.js")(sequelize, Sequelize);
+db.songRecommendation = require("./songRecommendation.js")(sequelize, Sequelize);
+
 
 
 Object.keys(db).forEach((modelName) => {

@@ -255,7 +255,10 @@ router.post('/rooms/:roomId/ocrSave', isLogin, isMember, saveOcr);
  *                   properties:
  *                     highlightId:
  *                       type: integer
- *                       example: 10
+ *                       example: 7
+ *                     ocrPageId:
+ *                       type: integer
+ *                       example: 1
  *                     selectedText:
  *                       type: string
  *                       example: "하이라이트할 텍스트"
@@ -265,19 +268,24 @@ router.post('/rooms/:roomId/ocrSave', isLogin, isMember, saveOcr);
  *                     endIndex:
  *                       type: integer
  *                       example: 34
- *                     ocrCommentId:
- *                       type: integer
- *                       example: 21
- *                     content:
- *                       type: string
- *                       example: "첫 번째 메모 내용"
- *                     color:
- *                       type: string
- *                       example: "#F6D36B"
- *                     createdAt:
- *                       type: string
- *                       format: date-time
- *                       example: "2026-05-28T12:00:00.000Z"
+ *                     ocrComments:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           ocrCommentId:
+ *                             type: integer
+ *                             example: 22
+ *                           content:
+ *                             type: string
+ *                             example: "첫 번째 메모 내용"
+ *                           color:
+ *                             type: string
+ *                             example: "#FF5733"
+ *                           createdAt:
+ *                             type: string
+ *                             format: date-time
+ *                             example: "2026-05-30T18:01:04.297Z"
  *       "404":
  *         description: 멤버 또는 OCR 페이지를 찾을 수 없음
  *         content:

@@ -9,11 +9,11 @@ const sendFriendRequest = async (senderId, receiverId) => {
     throw new Error("자기 자신에게 친구 요청을 보낼 수 없습니다.");
   }
 
-  // 차단 여부 확인 (양방향)
+  // 차단 여부 확인 (양방향) - 내가 상대를 차단했거나, 상대가 나를 차단한 경우 모두 불가
   const isBlocked = await blockService.isBlocked(senderId, receiverId);
   const isBlockedReverse = await blockService.isBlocked(receiverId, senderId);
   if (isBlocked || isBlockedReverse) {
-    throw new Error("차단된 사용자에게 친구 요청을 보낼 수 없습니다.");
+    throw new Error("현재 친구 요청을 보낼 수 없습니다.");
   }
 
   const receiver = await db.user.findOne({
