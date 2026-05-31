@@ -106,6 +106,10 @@ const createComment = async (roomId, userId, page, content, comment) => {
     const member = await getMemberByUserId(roomId, userId);
     if (!member) throw new Error("해당 방의 멤버가 아닙니다");
 
+    if (page > member.maxPage) {
+        await member.update({ maxPage: page });
+    }
+    
     const newComment = await db.comment.create({
         comment,
         content,

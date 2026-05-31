@@ -333,6 +333,8 @@ const getMembers = async (roomId) => {
   }));
 };
 
+
+//멤버 진행도
 const getMembersProgress = async (roomId) => {
   const roomData = await db.room.findOne({
     where: { roomId },
