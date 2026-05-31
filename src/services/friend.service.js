@@ -1,10 +1,6 @@
-// TODO: 알림 기능 연결
-// 친구 요청 보냄 → receiver에게 FRIEND_REQUEST 알림
-// 친구 요청 수락함 → sender에게 FRIEND_ACCEPTED 알림
-
 const { Op } = require("sequelize");
 const db = require("../models");
-
+const notificationService = require("./notification.service");
 
 const blockService = require("./block.service");
 
@@ -60,6 +56,13 @@ const sendFriendRequest = async (senderId, receiverId) => {
     receiverId,
     status: "PENDING",
   });
+
+  // 친구 요청 알림 추가
+  await notificationService.createFriendRequestNotification({
+    senderUserId: senderId,
+    receiverUserId: receiverId,
+  }).catch(console.error);
+
 
   return friendRequest;
 };
@@ -121,6 +124,12 @@ const acceptFriendRequest = async (friendRequestId, userId) => {
     status: "ACCEPTED",
     updatedAt: new Date(),
   });
+
+  // 수락 알림 → 요청 보낸 사람에게
+  await notificationService.createFriendAcceptedNotification({
+    acceptorUserId: userId,           
+    receiverUserId: request.senderId, 
+  }).catch(console.error);
 
   return "친구 요청을 수락했습니다.";
 };

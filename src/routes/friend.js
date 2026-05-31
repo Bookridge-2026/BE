@@ -4,9 +4,6 @@ const router = express.Router();
 const friendController = require("../controllers/friend.controller");
 
 const passport = require("passport");
-const { jwtStrategy } = require("../config/auth.config");
-
-passport.use(jwtStrategy);
 const isLogin = passport.authenticate("jwt", { session: false });
 
 router.get("/", isLogin, friendController.getFriends);

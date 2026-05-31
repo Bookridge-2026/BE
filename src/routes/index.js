@@ -10,5 +10,6 @@ router.use("/friends", require("./friend"));
 router.use("/users", require("./user"));
 router.use("/blocks", require("./block"));
 router.use("/ocr", require("./ocrRoute"))
+router.use("/notifications", require("./notification"))
 
 module.exports = router;
