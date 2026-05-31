@@ -45,7 +45,14 @@ const getRooms = async ({ keyword, status, page = 1, size = 10 }) => {
       {
         model: db.book,
         as: "book",
-        attributes: ["isbn", "title", "author", "thumbnail", "publisher"],
+        attributes: [
+          "isbn",
+          "title",
+          "author",
+          "thumbnail",
+          "publisher",
+          "totalPage",
+        ],
         where: Object.keys(bookWhere).length ? bookWhere : undefined,
         required: !!keyword,
       },
@@ -86,7 +93,7 @@ const getRooms = async ({ keyword, status, page = 1, size = 10 }) => {
 // 방 생성
 const createRoom = async (
   userId,
-  { isbn, period, atLeastPeople, poke, detail },
+  { isbn, period, atLeastPeople, poke, detail, totalPage },
 ) => {
   // 1) 입력값 검증
   if (!isbn) throw new Error("ISBN은 필수입니다.");
@@ -94,10 +101,18 @@ const createRoom = async (
     throw new Error("기간은 1~90일이어야 합니다.");
   if (!atLeastPeople || atLeastPeople < 1 || atLeastPeople > 10)
     throw new Error("최소 인원은 1~10명이어야 합니다.");
-  if (poke && (poke < 1 || poke > 30)) throw new Error("poke는 1~30번만 설정할 수 있습니다.");
+  if (poke && (poke < 1 || poke > 30))
+    throw new Error("poke는 1~30번만 설정할 수 있습니다.");
 
   // 2) ISBN 기반 Book 동기화 (없으면 카카오 API에서 저장)
   await bookService.syncBookByIsbn(isbn);
+  if (
+    totalPage &&
+    Number.isInteger(Number(totalPage)) &&
+    Number(totalPage) > 0
+  ) {
+    await db.book.update({ totalPage: Number(totalPage) }, { where: { isbn } });
+  }
 
   // 3) 방 생성 (상태=waiting, startDate=오늘)
   const room = await db.room.create({
@@ -123,7 +138,10 @@ const createRoom = async (
     color,
   });
 
-  return { room, member };
+  // 5) 최신 book 조회 (totalPage 업데이트 반영)
+  const book = await db.book.findOne({ where: { isbn } });
+
+  return { room, member, book };
 };
 
 // 방 참여
@@ -250,7 +268,14 @@ const getRoomByInviteCode = async (inviteCode) => {
       {
         model: db.book,
         as: "book",
-        attributes: ["isbn", "title", "author", "thumbnail", "publisher"],
+        attributes: [
+          "isbn",
+          "title",
+          "author",
+          "thumbnail",
+          "publisher",
+          "totalPage",
+        ],
       },
       {
         model: db.member,
@@ -333,7 +358,6 @@ const getMembers = async (roomId) => {
   }));
 };
 
-
 //멤버 진행도
 const getMembersProgress = async (roomId) => {
   const roomData = await db.room.findOne({
@@ -381,82 +405,81 @@ const getMembersProgress = async (roomId) => {
 // service/roomService.js
 
 const getJoinedRooms = async (userId) => {
-    const today = new Date();
+  const today = new Date();
 
-    const rooms = await db.room.findAll({
+  const rooms = await db.room.findAll({
+    include: [
+      {
+        model: db.member,
+        as: "members",
+        where: { userId, state: "attend" },
+        attributes: ["maxPage"],
+      },
+      {
+        model: db.book,
+        as: "book",
+        attributes: ["title", "author", "publisher", "thumbnail", "totalPage"],
+      },
+      {
+        model: db.member,
+        as: "allMembers",
+        where: { state: "attend" },
+        attributes: ["color"],
         include: [
-            {
-                model: db.member,
-                as: "members",
-                where: { userId, state: "attend" },
-                attributes: ["maxPage"],
-            },
-            {
-                model: db.book,
-                as: "book",
-                attributes: ["title", "author", "publisher", "thumbnail", "totalPage"],
-            },
-            {
-                model: db.member,
-                as: "allMembers",
-                where: { state: "attend" },
-                attributes: ["color"],
-                include: [
-                    {
-                        model: db.user,
-                        as: "user",
-                        attributes: ["profileImageUrl"],
-                    },
-                ],
-            },
+          {
+            model: db.user,
+            as: "user",
+            attributes: ["profileImageUrl"],
+          },
         ],
-        attributes: ["roomId", "state", "startDate", "period", "atLeastPeople"],
-    });
+      },
+    ],
+    attributes: ["roomId", "state", "startDate", "period", "atLeastPeople"],
+  });
 
-    if (rooms.length === 0) throw new Error("참여 중인 방이 없습니다");
+  if (rooms.length === 0) throw new Error("참여 중인 방이 없습니다");
 
-    return rooms.map((room) => {
-        const myMember = room.members[0];
-        const totalPages = room.book.totalPage;
-        const maxReadPage = myMember.maxPage;
+  return rooms.map((room) => {
+    const myMember = room.members[0];
+    const totalPages = room.book.totalPage;
+    const maxReadPage = myMember.maxPage;
 
-        // 독서 진행률 계산
-        const progressRate = totalPages > 0
-            ? Math.floor((maxReadPage / totalPages) * 100)
-            : 0;
+    // 독서 진행률 계산
+    const progressRate =
+      totalPages > 0 ? Math.floor((maxReadPage / totalPages) * 100) : 0;
 
-        // 남은 일수 계산 (ongoing일 때만)
-        let daysLeft = null;
-        if (room.state === "ongoing" && room.startDate) {
-            const endDate = new Date(room.startDate);
-            endDate.setDate(endDate.getDate() + room.period);
-            daysLeft = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24));
-        }
+    // 남은 일수 계산 (ongoing일 때만)
+    let daysLeft = null;
+    if (room.state === "ongoing" && room.startDate) {
+      const endDate = new Date(room.startDate);
+      endDate.setDate(endDate.getDate() + room.period);
+      daysLeft = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24));
+    }
 
-        // 멤버 프로필 이미지
-        const memberProfiles = room.allMembers.map((m) => ({
-            profileImageUrl: m.user.profileImageUrl,
-            color: m.color,
-        }));
+    // 멤버 프로필 이미지
+    const memberProfiles = room.allMembers.map((m) => ({
+      profileImageUrl: m.user.profileImageUrl,
+      color: m.color,
+    }));
 
-        return {
-            roomId: room.roomId,
-            state: room.state,
-            book: {
-                title: room.book.title,
-                author: room.book.author,
-                publisher: room.book.publisher,
-                thumbnail: room.book.thumbnail,
-            },
-            period: room.period,
-            ...(room.state === "ongoing" && { daysLeft }),
-            atLeastPeople: room.atLeastPeople,
-            progressRate,
-            maxReadPage,
-            totalPages,
-            memberProfiles,
-        };
-    });
+    return {
+      roomId: room.roomId,
+      state: room.state,
+      book: {
+        title: room.book.title,
+        author: room.book.author,
+        publisher: room.book.publisher,
+        thumbnail: room.book.thumbnail,
+      },
+      period: room.period,
+      ...(room.state === "ongoing" && { daysLeft }),
+      atLeastPeople: room.atLeastPeople,
+      progressRate,
+      maxReadPage,
+      totalPages,
+      memberProfiles,
+    };
+  });
 };
 
 module.exports = {
@@ -469,5 +492,5 @@ module.exports = {
   getRoomDetail,
   getMembers,
   getMembersProgress,
-  getJoinedRooms
+  getJoinedRooms,
 };
