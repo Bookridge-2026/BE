@@ -188,11 +188,11 @@ const joinRoom = async (userId, roomId) => {
   const usedColors = room.members.map((m) => m.color);
   const color = pickRandomColor(usedColors);
 
-  // 6) 멤버 등록
+  // 6) 멤버 등록 (pending 상태로 저장 - 방장 수락 대기)
   const member = await db.member.create({
     userId,
     roomId,
-    state: "attend",
+    state: "pending",
     particTime: new Date(),
     role: "member",
     ocrChance: 5,
@@ -201,6 +201,79 @@ const joinRoom = async (userId, roomId) => {
   });
 
   return member;
+};
+
+// 초대 수락
+const acceptInvite = async (userId, roomId) => {
+  const member = await db.member.findOne({
+    where: { roomId, userId, state: "invited" },
+  });
+  if (!member) throw new Error("초대받은 멤버를 찾을 수 없습니다.");
+
+  await member.update({ state: "attend" });
+  return member;
+};
+
+// 초대 거절
+const rejectInvite = async (userId, roomId) => {
+  const member = await db.member.findOne({
+    where: { roomId, userId, state: "invited" },
+  });
+  if (!member) throw new Error("초대받은 멤버를 찾을 수 없습니다.");
+
+  await member.destroy();
+};
+
+// 입장 요청 수락
+const acceptMember = async (leaderId, roomId, targetUserId) => {
+  // 1) 방 존재 확인
+  const room = await db.room.findOne({ where: { roomId } });
+  if (!room) throw new Error("방을 찾을 수 없습니다.");
+
+  // 2) 방 상태 확인
+  if (room.state !== "waiting") throw new Error("모집 중인 방이 아닙니다.");
+
+  // 3) 방장 확인
+  const leaderMember = await db.member.findOne({
+    where: { roomId, userId: leaderId, role: "leader" },
+  });
+  if (!leaderMember) throw new Error("방장만 수락할 수 있습니다.");
+
+  // 4) 대상 멤버 확인 (pending 상태인지)
+  const targetMember = await db.member.findOne({
+    where: { roomId, userId: targetUserId, state: "pending" },
+  });
+  if (!targetMember) throw new Error("입장 요청한 멤버를 찾을 수 없습니다.");
+
+  // 5) attend로 변경
+  await targetMember.update({ state: "attend" });
+
+  return targetMember;
+};
+
+// 입장 요청 거절
+const rejectMember = async (leaderId, roomId, targetUserId) => {
+  // 1) 방 존재 확인
+  const room = await db.room.findOne({ where: { roomId } });
+  if (!room) throw new Error("방을 찾을 수 없습니다.");
+
+  // 2) 방 상태 확인
+  if (room.state !== "waiting") throw new Error("모집 중인 방이 아닙니다.");
+
+  // 3) 방장 확인
+  const leaderMember = await db.member.findOne({
+    where: { roomId, userId: leaderId, role: "leader" },
+  });
+  if (!leaderMember) throw new Error("방장만 거절할 수 있습니다.");
+
+  // 4) 대상 멤버 확인 (pending 상태인지)
+  const targetMember = await db.member.findOne({
+    where: { roomId, userId: targetUserId, state: "pending" },
+  });
+  if (!targetMember) throw new Error("입장 요청한 멤버를 찾을 수 없습니다.");
+
+  // 5) 멤버 삭제
+  await targetMember.destroy();
 };
 
 // 방 시작 (waiting → ongoing)
@@ -408,6 +481,7 @@ const getJoinedRooms = async (userId) => {
   const today = new Date();
 
   const rooms = await db.room.findAll({
+    where: { state: { [Op.in]: ["waiting", "ongoing"] } },
     include: [
       {
         model: db.member,
@@ -482,10 +556,273 @@ const getJoinedRooms = async (userId) => {
   });
 };
 
+// 내 방 둘러보기 (마이페이지) - 대기중인 방 / 진행 중인 방 / 종료된 방 각각 조회
+const getMyRooms = async (userId, state, nickname) => {
+    // waiting일 때
+    if (state === "waiting") {
+        // 1. 초대받은 방 (state = invited)
+        const invitedMembers = await db.member.findAll({
+            where: { userId, state: "invited" },
+            include: [
+                {
+                    model: db.room,
+                    as: "room",
+                    where: { state },
+                    attributes: ["roomId"],
+                    include: [
+                        {
+                            model: db.book,
+                            as: "book",
+                            attributes: ["title", "publisher"],
+                        },
+                        {
+                            model: db.member,
+                            as: "members",
+                            where: { role: "leader" },
+                            attributes: ["userId"],
+                            include: [
+                                {
+                                    model: db.user,
+                                    as: "user",
+                                    attributes: ["nickname"],
+                                },
+                            ],
+                        },
+                    ],
+                },
+            ],
+            attributes: ["memberId"],
+        });
+
+        const invitedRooms = invitedMembers.map((m) => ({
+            type: "invited",
+            roomId: m.room.roomId,
+            memberId: m.memberId,
+            book: {
+                title: m.room.book.title,
+                publisher: m.room.book.publisher,
+            },
+            invitedBy: m.room.members[0]?.user?.nickname ?? null,
+        }));
+
+        // 2. 내가 만든 방 (role = leader)
+        const leaderMembers = await db.member.findAll({
+            where: { userId, role: "leader" },
+            include: [
+                {
+                    model: db.room,
+                    as: "room",
+                    where: { state },
+                    attributes: ["roomId", "atLeastPeople"],
+                    include: [
+                        {
+                            model: db.book,
+                            as: "book",
+                            attributes: ["title", "publisher"],
+                        },
+                        {
+                            model: db.member,
+                            as: "members",
+                            attributes: ["memberId", "userId", "state"],
+                            include: [
+                                {
+                                    model: db.user,
+                                    as: "user",
+                                    attributes: ["nickname"],
+                                },
+                            ],
+                        },
+                    ],
+                },
+            ],
+            attributes: ["memberId"],
+        });
+
+        const leaderRooms = leaderMembers.map((m) => {
+            const allMembers = m.room.members;
+            const currentMembers = allMembers.filter((mem) => mem.state === "attend").length;
+            const pendingMembers = allMembers
+                .filter((mem) => mem.state === "pending")
+                .map((mem) => ({
+                    memberId: mem.memberId,
+                    userId: mem.userId,
+                    nickname: mem.user?.nickname ?? null,
+                }));
+
+            return {
+                type: "leader",
+                roomId: m.room.roomId,
+                memberId: m.memberId,
+                book: {
+                    title: m.room.book.title,
+                    publisher: m.room.book.publisher,
+                },
+                currentMembers,
+                atLeastPeople: m.room.atLeastPeople,
+                pendingMembers,
+            };
+        });
+
+        // 3. 다른 사용자가 만든 방 (role = member, state = attend or pending)
+        const otherMembers = await db.member.findAll({
+            where: {
+                userId,
+                role: "member",
+                state: { [Op.in]: ["attend", "pending"] },
+            },
+            include: [
+                {
+                    model: db.room,
+                    as: "room",
+                    where: { state },
+                    attributes: ["roomId", "atLeastPeople"],
+                    include: [
+                        {
+                            model: db.book,
+                            as: "book",
+                            attributes: ["title", "publisher"],
+                        },
+                        {
+                            model: db.member,
+                            as: "members",
+                            where: { state: "attend" },
+                            attributes: ["memberId"],
+                        },
+                    ],
+                },
+            ],
+            attributes: ["memberId", "state"],
+        });
+
+        const otherRooms = otherMembers.map((m) => ({
+            type: "other",
+            roomId: m.room.roomId,
+            memberId: m.memberId,
+            book: {
+                title: m.room.book.title,
+                publisher: m.room.book.publisher,
+            },
+            currentMembers: m.room.members.length,
+            atLeastPeople: m.room.atLeastPeople,
+            myState: m.state,
+            myNickname: nickname,
+        }));
+
+        return { invitedRooms, leaderRooms, otherRooms };
+    }
+
+    // ongoing, closed일 때
+    // 1. 내가 만든 방 (role = leader)
+    const leaderMembers = await db.member.findAll({
+        where: { userId, role: "leader" },
+        include: [
+            {
+                model: db.room,
+                as: "room",
+                where: { state },
+                attributes: ["roomId"],
+                include: [
+                    {
+                        model: db.book,
+                        as: "book",
+                        attributes: ["title", "publisher"],
+                    },
+                ],
+            },
+        ],
+        attributes: ["memberId"],
+    });
+
+    const leaderRooms = leaderMembers.map((m) => ({
+        type: "leader",
+        roomId: m.room.roomId,
+        book: {
+            title: m.room.book.title,
+            publisher: m.room.book.publisher,
+        },
+    }));
+
+    // 2. 다른 사용자가 만든 방 (role = member, state = attend)
+    const otherMembers = await db.member.findAll({
+        where: { userId, role: "member", state: "attend" },
+        include: [
+            {
+                model: db.room,
+                as: "room",
+                where: { state },
+                attributes: ["roomId"],
+                include: [
+                    {
+                        model: db.book,
+                        as: "book",
+                        attributes: ["title", "publisher"],
+                    },
+                ],
+            },
+        ],
+        attributes: ["memberId"],
+    });
+
+    const otherRooms = otherMembers.map((m) => ({
+        type: "other",
+        roomId: m.room.roomId,
+        book: {
+            title: m.room.book.title,
+            publisher: m.room.book.publisher,
+        },
+    }));
+
+    return { leaderRooms, otherRooms };
+};
+
+// 내 책 모아보기 (ongoing + closed 방의 책 목록)
+const getMyBooks = async (userId) => {
+    const members = await db.member.findAll({
+        where: { userId, state: "attend" },
+        include: [
+            {
+                model: db.room,
+                as: "room",
+                where: { state: { [Op.in]: ["ongoing", "closed"] } },
+                attributes: ["roomId", "state", "startDate"],
+                include: [
+                    {
+                        model: db.book,
+                        as: "book",
+                        attributes: ["title", "publisher"],
+                    },
+                ],
+            },
+        ],
+        attributes: ["memberId"],
+    });
+
+    const books = members.map((m) => ({
+        roomId: m.room.roomId,
+        state: m.room.state,
+        startDate: m.room.startDate,
+        book: {
+            title: m.room.book.title,
+            publisher: m.room.book.publisher,
+        },
+    }));
+
+    // 시작일 순서로 정렬
+    books.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+
+    const closedCount = books.filter((b) => b.state === "closed").length;
+
+    return { books, closedCount };
+};
+
 module.exports = {
   getRooms,
   createRoom,
   joinRoom,
+  acceptInvite,
+  rejectInvite,
+  acceptMember,
+  rejectMember,
   startRoom,
   createInviteCode,
   getRoomByInviteCode,
@@ -493,4 +830,6 @@ module.exports = {
   getMembers,
   getMembersProgress,
   getJoinedRooms,
+  getMyBooks,
+  getMyRooms,
 };

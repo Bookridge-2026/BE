@@ -154,7 +154,49 @@ const getUserProfile = async (req, res) => {
   }
 };
 
+/**
+ * @swagger
+ * /api/users/me:
+ *   get:
+ *     summary: 내 프로필 조회
+ *     description: 현재 로그인한 유저의 프로필 이미지와 닉네임을 반환합니다.
+ *     tags: [User]
+ *     security:
+ *       - Authorization: []
+ *     responses:
+ *       200:
+ *         description: 조회 성공
+ *         content:
+ *           application/json:
+ *             example:
+ *               success: true
+ *               data:
+ *                 nickname: "홍길동"
+ *                 profileImageUrl: "https://bookridge.s3.ap-northeast-2.amazonaws.com/profile.svg"
+ *       500:
+ *         description: 서버 오류
+ *         content:
+ *           application/json:
+ *             example:
+ *               success: false
+ *               message: "에러 메시지"
+ */
+const getMe = async (req, res) => {
+    try {
+        return res.status(200).json({
+            success: true,
+            data: {
+                nickname: req.user.nickname,
+                profileImageUrl: req.user.profileImageUrl,
+            }
+        });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 module.exports = {
   searchUserByCode,
   getUserProfile,
+  getMe,
 };

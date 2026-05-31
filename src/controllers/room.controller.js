@@ -519,10 +519,400 @@ const getJoinedRooms = async (req, res) => {
   }
 };
 
+/**
+ * @swagger
+ * /api/rooms/{roomId}/invite/accept:
+ *   patch:
+ *     summary: 초대 수락
+ *     description: 초대받은 본인이 초대를 수락합니다. state가 invited에서 attend로 변경됩니다.
+ *     tags: [Room]
+ *     security:
+ *       - Authorization: []
+ *     parameters:
+ *       - in: path
+ *         name: roomId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         example: 1
+ *     responses:
+ *       200:
+ *         description: 수락 성공
+ *         content:
+ *           application/json:
+ *             example:
+ *               success: true
+ *               message: "초대를 수락했습니다."
+ *               data:
+ *                 memberId: 5
+ *                 userId: 2
+ *                 state: "attend"
+ *       400:
+ *         description: 초대받은 멤버 없음
+ *       404:
+ *         description: 방 없음
+ */
+const acceptInvite = async (req, res) => {
+    try {
+        const userId = req.user.userId;
+        const { roomId } = req.params;
+
+        const member = await roomService.acceptInvite(userId, roomId);
+        return res.status(200).json({
+            success: true,
+            message: "초대를 수락했습니다.",
+            data: {
+                memberId: member.memberId,
+                userId: member.userId,
+                state: member.state,
+            },
+        });
+    } catch (error) {
+        const status = error.message.includes("찾을 수 없습니다") ? 404 : 400;
+        return res.status(status).json({ success: false, message: error.message });
+    }
+};
+
+/**
+ * @swagger
+ * /api/rooms/{roomId}/invite/reject:
+ *   patch:
+ *     summary: 초대 거절
+ *     description: 초대받은 본인이 초대를 거절합니다. 멤버 row가 삭제됩니다.
+ *     tags: [Room]
+ *     security:
+ *       - Authorization: []
+ *     parameters:
+ *       - in: path
+ *         name: roomId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         example: 1
+ *     responses:
+ *       200:
+ *         description: 거절 성공
+ *         content:
+ *           application/json:
+ *             example:
+ *               success: true
+ *               message: "초대를 거절했습니다."
+ *       400:
+ *         description: 초대받은 멤버 없음
+ *       404:
+ *         description: 방 없음
+ */
+const rejectInvite = async (req, res) => {
+    try {
+        const userId = req.user.userId;
+        const { roomId } = req.params;
+
+        await roomService.rejectInvite(userId, roomId);
+        return res.status(200).json({
+            success: true,
+            message: "초대를 거절했습니다.",
+        });
+    } catch (error) {
+        const status = error.message.includes("찾을 수 없습니다") ? 404 : 400;
+        return res.status(status).json({ success: false, message: error.message });
+    }
+};
+
+/**
+ * @swagger
+ * /api/rooms/{roomId}/users/{userId}/accept:
+ *   patch:
+ *     summary: 입장 요청 수락
+ *     description: 방장이 pending 상태인 멤버의 입장 요청을 수락합니다. 수락 시 state가 attend로 변경됩니다.
+ *     tags: [Room]
+ *     security:
+ *       - Authorization: []
+ *     parameters:
+ *       - in: path
+ *         name: roomId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         example: 1
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 수락할 유저의 userId
+ *         example: 3
+ *     responses:
+ *       200:
+ *         description: 수락 성공
+ *         content:
+ *           application/json:
+ *             example:
+ *               success: true
+ *               message: "입장 요청을 수락했습니다."
+ *               data:
+ *                 memberId: 5
+ *                 userId: 3
+ *                 state: "attend"
+ *       400:
+ *         description: 권한 없음 / 방 상태 불일치 / 대상 없음
+ *       404:
+ *         description: 방 없음
+ */
+const acceptMember = async (req, res) => {
+    try {
+        const leaderId = req.user.userId;
+        const { roomId, userId } = req.params;
+
+        const member = await roomService.acceptMember(leaderId, roomId, userId);
+        return res.status(200).json({
+            success: true,
+            message: "입장 요청을 수락했습니다.",
+            data: {
+                memberId: member.memberId,
+                userId: member.userId,
+                state: member.state,
+            },
+        });
+    } catch (error) {
+        const status = error.message.includes("찾을 수 없습니다") ? 404 : 400;
+        return res.status(status).json({ success: false, message: error.message });
+    }
+};
+
+/**
+ * @swagger
+ * /api/rooms/{roomId}/users/{userId}/reject:
+ *   patch:
+ *     summary: 입장 요청 거절
+ *     description: 방장이 pending 상태인 멤버의 입장 요청을 거절합니다. 거절 시 멤버 row가 삭제됩니다.
+ *     tags: [Room]
+ *     security:
+ *       - Authorization: []
+ *     parameters:
+ *       - in: path
+ *         name: roomId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         example: 1
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 거절할 유저의 userId
+ *         example: 3
+ *     responses:
+ *       200:
+ *         description: 거절 성공
+ *         content:
+ *           application/json:
+ *             example:
+ *               success: true
+ *               message: "입장 요청을 거절했습니다."
+ *       400:
+ *         description: 권한 없음 / 방 상태 불일치 / 대상 없음
+ *       404:
+ *         description: 방 없음
+ */
+const rejectMember = async (req, res) => {
+    try {
+        const leaderId = req.user.userId;
+        const { roomId, userId } = req.params;
+
+        await roomService.rejectMember(leaderId, roomId, userId);
+        return res.status(200).json({
+            success: true,
+            message: "입장 요청을 거절했습니다.",
+        });
+    } catch (error) {
+        const status = error.message.includes("찾을 수 없습니다") ? 404 : 400;
+        return res.status(status).json({ success: false, message: error.message });
+    }
+};
+
+/**
+ * @swagger
+ * /api/rooms/my/books:
+ *   get:
+ *     summary: 내 책 모아보기
+ *     description: 현재 사용자가 참여 중인 방 중 ongoing 또는 closed 상태인 방의 책 목록을 시작일 순으로 반환합니다. closed된 방의 개수도 함께 반환합니다.
+ *     tags: [Room]
+ *     security:
+ *       - Authorization: []
+ *     responses:
+ *       200:
+ *         description: 조회 성공
+ *         content:
+ *           application/json:
+ *             example:
+ *               success: true
+ *               data:
+ *                 closedCount: 1
+ *                 books:
+ *                   - roomId: 3
+ *                     state: "ongoing"
+ *                     startDate: "2026-05-20"
+ *                     book:
+ *                       title: "어린 왕자"
+ *                       publisher: "문학동네"
+ *                   - roomId: 4
+ *                     state: "closed"
+ *                     startDate: "2026-04-01"
+ *                     book:
+ *                       title: "앵무새 죽이기"
+ *                       publisher: "열린 책들"
+ *       401:
+ *         description: 인증 실패
+ *       500:
+ *         description: 서버 오류
+ */
+const getMyBooks = async (req, res) => {
+    try {
+        const userId = req.user.userId;
+        const result = await roomService.getMyBooks(userId);
+        return res.status(200).json({ success: true, data: result });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+/**
+ * @swagger
+ * /api/rooms/my:
+ *   get:
+ *     summary: 내 방 목록 조회
+ *     description: |
+ *       state 값에 따라 다른 데이터를 반환합니다.
+ *       - waiting: 초대받은 방(invitedRooms), 내가 만든 방(leaderRooms), 다른 사용자가 만든 방(otherRooms)
+ *       - ongoing/closed: 내가 만든 방(leaderRooms), 다른 사용자가 만든 방(otherRooms)
+ *     tags: [Room]
+ *     security:
+ *       - Authorization: []
+ *     parameters:
+ *       - in: query
+ *         name: state
+ *         required: true
+ *         schema:
+ *           type: string
+ *           enum: [waiting, ongoing, closed]
+ *         example: waiting
+ *     responses:
+ *       200:
+ *         description: 조회 성공
+ *         content:
+ *           application/json:
+ *             examples:
+ *               waiting:
+ *                 summary: "state=waiting (대기 중인 방)"
+ *                 description: "memberId = 해당 방에서 현재 사용자의 member 테이블 PK"
+ *                 value:
+ *                   success: true
+ *                   data:
+ *                     invitedRooms:
+ *                       - type: "invited"
+ *                         roomId: 1
+ *                         memberId: 5
+ *                         book:
+ *                           title: "앵무새 죽이기"
+ *                           publisher: "열린 책들"
+ *                         invitedBy: "홍길동"
+ *                     leaderRooms:
+ *                       - type: "leader"
+ *                         roomId: 2
+ *                         memberId: 1
+ *                         book:
+ *                           title: "채식주의자"
+ *                           publisher: "창비"
+ *                         currentMembers: 2
+ *                         atLeastPeople: 3
+ *                         pendingMembers:
+ *                           - memberId: 7
+ *                             userId: 3
+ *                             nickname: "김철수"
+ *                     otherRooms:
+ *                       - type: "other"
+ *                         roomId: 3
+ *                         memberId: 4
+ *                         book:
+ *                           title: "82년생 김지영"
+ *                           publisher: "민음사"
+ *                         currentMembers: 3
+ *                         atLeastPeople: 2
+ *                         myState: "pending"
+ *                         myNickname: "홍길동"
+ *               ongoing:
+ *                 summary: "state=ongoing (진행 중인 방)"
+ *                 description: "memberId = 해당 방에서 현재 사용자의 member 테이블 PK"
+ *                 value:
+ *                   success: true
+ *                   data:
+ *                     leaderRooms:
+ *                       - type: "leader"
+ *                         roomId: 4
+ *                         memberId: 2
+ *                         book:
+ *                           title: "어린 왕자"
+ *                           publisher: "문학동네"
+ *                     otherRooms:
+ *                       - type: "other"
+ *                         roomId: 5
+ *                         memberId: 9
+ *                         book:
+ *                           title: "1984"
+ *                           publisher: "민음사"
+ *               closed:
+ *                 summary: "state=closed (종료된 방)"
+ *                 description: "memberId = 해당 방에서 현재 사용자의 member 테이블 PK"
+ *                 value:
+ *                   success: true
+ *                   data:
+ *                     leaderRooms:
+ *                       - type: "leader"
+ *                         roomId: 6
+ *                         memberId: 3
+ *                         book:
+ *                           title: "데미안"
+ *                           publisher: "민음사"
+ *                     otherRooms:
+ *                       - type: "other"
+ *                         roomId: 7
+ *                         memberId: 11
+ *                         book:
+ *                           title: "노르웨이의 숲"
+ *                           publisher: "문학사상"
+ *       400:
+ *         description: 잘못된 state 값
+ *       500:
+ *         description: 서버 오류
+ */
+const getMyRooms = async (req, res) => {
+    try {
+        const userId = req.user.userId;
+        const nickname = req.user.nickname;
+        const { state } = req.query;
+
+        const validStates = ["waiting", "ongoing", "closed"];
+        if (!state || !validStates.includes(state)) {
+            return res.status(400).json({ success: false, message: "state 값은 waiting, ongoing, closed 중 하나여야 합니다." });
+        }
+
+        const rooms = await roomService.getMyRooms(userId, state, nickname);
+        return res.status(200).json({ success: true, data: rooms });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 module.exports = {
   getRooms,
   createRoom,
   joinRoom,
+  acceptInvite,
+  rejectInvite,
+  acceptMember,
+  rejectMember,
+  getMyBooks,
   startRoom,
   createInviteCode,
   getRoomByInviteCode,
@@ -530,4 +920,5 @@ module.exports = {
   getMembers,
   getMembersProgress,
   getJoinedRooms,
+  getMyRooms,
 };
