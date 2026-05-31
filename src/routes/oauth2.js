@@ -22,50 +22,17 @@
  * /api/oauth2/callback/google:
  *   get:
  *     summary: 구글 로그인 콜백
- *     description: 구글 로그인 성공 후 JWT 토큰을 반환합니다.
+ *     description: 구글 로그인 성공 후 프론트로 리디렉션하면서 JWT 토큰을 전달합니다.
  *     tags: [OAuth2]
  *     responses:
- *       200:
- *         description: 로그인 성공
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 resultType:
- *                   type: string
- *                   example: SUCCESS
- *                 success:
- *                   type: object
- *                   properties:
- *                     message:
- *                       type: string
- *                       example: Google 로그인 성공!
- *                     tokens:
- *                       type: object
- *                       properties:
- *                         accessToken:
- *                           type: string
- *                           example: eyJhbGci...
- *                         refreshToken:
- *                           type: string
- *                           example: eyJhbGci...
- *                         user:
- *                           type: object
- *                           properties:
- *                             id:
- *                               type: integer
- *                               example: 1
- *                             email:
- *                               type: string
- *                               example: test@gmail.com
- *                             name:
- *                               type: string
- *                               example: 홍길동
- *                     data:
- *                       type: string
- *                       example: 홍길동
  *       302:
+ *         description: 로그인 성공 - 프론트로 리디렉션 (accessToken, refreshToken 쿼리파라미터로 전달)
+ *         headers:
+ *           Location:
+ *             description: "https://bookridge-sswu.vercel.app?accessToken=...&refreshToken=..."
+ *             schema:
+ *               type: string
+ *       301:
  *         description: 로그인 실패 시 /login-failed로 리다이렉트
  */
 
@@ -114,9 +81,40 @@
  *         description: 인증 실패
  */
 
+/**
+ * @swagger
+ * /api/oauth2/refresh:
+ *   post:
+ *     summary: 액세스 토큰 재발급
+ *     description: refreshToken으로 새로운 accessToken을 재발급합니다.
+ *     tags: [OAuth2]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           example:
+ *             refreshToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+ *     responses:
+ *       200:
+ *         description: 재발급 성공
+ *         content:
+ *           application/json:
+ *             example:
+ *               success: true
+ *               accessToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+ *       401:
+ *         description: 인증 실패
+ *         content:
+ *           application/json:
+ *             example:
+ *               success: false
+ *               message: "유효하지 않은 refreshToken입니다."
+ */
+
 const express = require('express');
 const router = express.Router();
 const passport = require('passport');
+const jwt = require('jsonwebtoken');
 const { googleStrategy, jwtStrategy } = require('../config/auth.config');
 
 passport.use(googleStrategy);
@@ -143,6 +141,26 @@ router.get('/mypage', isLogin, (req, res) => {
     message: `인증 성공! ${req.user.userId}님의 마이페이지입니다.`,
     user: req.user,
   });
+});
+
+router.post('/refresh', (req, res) => {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+        return res.status(401).json({ success: false, message: "refreshToken이 없습니다." });
+    }
+
+    try {
+        const payload = jwt.verify(refreshToken, process.env.JWT_SECRET);
+        const newAccessToken = jwt.sign(
+            { id: payload.id, email: payload.email },
+            process.env.JWT_SECRET,
+            { expiresIn: '1h' }
+        );
+        return res.status(200).json({ success: true, accessToken: newAccessToken });
+    } catch (error) {
+        return res.status(401).json({ success: false, message: "유효하지 않은 refreshToken입니다." });
+    }
 });
 
 module.exports = router;
