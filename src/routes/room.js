@@ -17,6 +17,9 @@ router.get("/joined", isLogin, roomController.getJoinedRooms);
 // 내 방 조회 (마이페이지)
 router.get("/my", isLogin, roomController.getMyRooms);
 
+// 내 책 모아보기
+router.get("/my/books", isLogin, roomController.getMyBooks);
+
 
 // 방 목록 / 생성
 // GET  /api/rooms?keyword=해리포터&status=waiting&page=1

@@ -481,6 +481,7 @@ const getJoinedRooms = async (userId) => {
   const today = new Date();
 
   const rooms = await db.room.findAll({
+    where: { state: { [Op.in]: ["waiting", "ongoing"] } },
     include: [
       {
         model: db.member,
@@ -774,6 +775,46 @@ const getMyRooms = async (userId, state, nickname) => {
     return { leaderRooms, otherRooms };
 };
 
+// 내 책 모아보기 (ongoing + closed 방의 책 목록)
+const getMyBooks = async (userId) => {
+    const members = await db.member.findAll({
+        where: { userId, state: "attend" },
+        include: [
+            {
+                model: db.room,
+                as: "room",
+                where: { state: { [Op.in]: ["ongoing", "closed"] } },
+                attributes: ["roomId", "state", "startDate"],
+                include: [
+                    {
+                        model: db.book,
+                        as: "book",
+                        attributes: ["title", "publisher"],
+                    },
+                ],
+            },
+        ],
+        attributes: ["memberId"],
+    });
+
+    const books = members.map((m) => ({
+        roomId: m.room.roomId,
+        state: m.room.state,
+        startDate: m.room.startDate,
+        book: {
+            title: m.room.book.title,
+            publisher: m.room.book.publisher,
+        },
+    }));
+
+    // 시작일 순서로 정렬
+    books.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+
+    const closedCount = books.filter((b) => b.state === "closed").length;
+
+    return { books, closedCount };
+};
+
 module.exports = {
   getRooms,
   createRoom,
@@ -789,5 +830,6 @@ module.exports = {
   getMembers,
   getMembersProgress,
   getJoinedRooms,
+  getMyBooks,
   getMyRooms,
 };
