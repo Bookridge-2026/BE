@@ -1,15 +1,10 @@
 const db = require("../models");
+const notificationService = require("./notification.service");
 
 const getMemberByUserId = async (roomId, userId) => {
     const member = await db.member.findOne({
         where: { roomId, userId },
     });
-    // 테스트용 임시 우회 - 나중에 꼭 지울 것
-    if (!member) {
-        console.warn("[TEST MODE] 멤버 검증 우회:", { roomId, userId });
-        return { memberId: 1, color: "#FFB6C1" }; // 하드코딩된 더미값
-    }
-    
     return member;
 };
 
@@ -111,6 +106,10 @@ const createComment = async (roomId, userId, page, content, comment) => {
     const member = await getMemberByUserId(roomId, userId);
     if (!member) throw new Error("해당 방의 멤버가 아닙니다");
 
+    if (page > member.maxPage) {
+        await member.update({ maxPage: page });
+    }
+    
     const newComment = await db.comment.create({
         comment,
         content,
@@ -118,6 +117,13 @@ const createComment = async (roomId, userId, page, content, comment) => {
         memberId: member.memberId,
         isDeleted: false,
     });
+
+    await notificationService.createCommentNotification({
+        comment: newComment,
+        senderMemberId: member.memberId,
+
+        
+    }).catch(console.error);
 
     return newComment;
 };
@@ -202,6 +208,12 @@ const createReply = async (roomId, userId, commentId, content) => {
         memberId: member.memberId,  
         commentId,
     });
+
+    await notificationService.createReplyNotification({
+        reply,
+        senderMemberId: member.memberId,
+    }).catch(console.error);
+
     return reply;
 };
 

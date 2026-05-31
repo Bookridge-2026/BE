@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const passport = require("passport");
-const { jwtStrategy } = require("../config/auth.config");
+
 
 const commentController = require("../controllers/comment.controller");
 const emojiController = require("../controllers/emoji.controller");
@@ -9,7 +9,6 @@ const memberController = require("../controllers/member.controller");
 const roomController = require("../controllers/room.controller");
 const songRecommendationController = require("../controllers/songRecommendation.controller");
 
-passport.use(jwtStrategy);
 const isLogin = passport.authenticate("jwt", { session: false });
 
 // 참여 중인 방 조회 (홈)
@@ -45,6 +44,11 @@ router.get("/:roomId/members", roomController.getMembers);
 // 멤버 콕 찌르기 / 강퇴
 router.post("/:roomId/members/:memberId/poke", isLogin, memberController.pokeMember);
 router.delete("/:roomId/members/:memberId", isLogin, memberController.kickMember);
+
+
+
+
+//---------------------------------
 
 // 일반 코멘트
 router.get("/:roomId/comments", commentController.getComments);

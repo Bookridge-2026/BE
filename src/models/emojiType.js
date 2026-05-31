@@ -16,7 +16,7 @@ module.exports = (sequelize, DataTypes) =>{
             },
         },
         {
-            tableName: "emojiType",
+            tableName: "emojitype",
             timestamps: false,
         }
     );

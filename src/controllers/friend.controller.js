@@ -20,6 +20,8 @@ const friendService = require("../services/friend.service");
  *         application/json:
  *           schema:
  *             type: object
+ *             required:
+ *               - receiverId
  *             properties:
  *               receiverId:
  *                 type: integer
@@ -115,6 +117,7 @@ const sendFriendRequest = async (req, res) => {
  *                                 example: a1b2c3d4
  *                               profileImageUrl:
  *                                 type: string
+ *                                 nullable: true
  *                                 example: https://lh3.googleusercontent.com/...
  *                           createdAt:
  *                             type: string
@@ -146,7 +149,7 @@ const getReceivedFriendRequests = async (req, res) => {
 /**
  * @swagger
  * /api/friends/requests/{friendRequestId}/accept:
- *   post:
+ *   patch:
  *     summary: 친구 요청 수락
  *     description: 받은 친구 요청을 수락합니다.
  *     tags: [Friend]
@@ -196,7 +199,7 @@ const acceptFriendRequest = async (req, res) => {
 /**
  * @swagger
  * /api/friends/requests/{friendRequestId}/reject:
- *   post:
+ *   patch:
  *     summary: 친구 요청 거절
  *     description: 받은 친구 요청을 거절합니다.
  *     tags: [Friend]
@@ -283,6 +286,7 @@ const rejectFriendRequest = async (req, res) => {
  *                             example: a1b2c3d4
  *                           profileImageUrl:
  *                             type: string
+ *                             nullable: true
  *                             example: https://lh3.googleusercontent.com/...
  *                           createdAt:
  *                             type: string

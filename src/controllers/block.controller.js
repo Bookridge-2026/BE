@@ -34,7 +34,7 @@ const blockService = require("../services/block.service");
  *                   example: true
  *                 message:
  *                   type: string
- *                   example: 유저를 차단했습니다.
+ *                   example: 사용자를 차단했습니다.
  *                 data:
  *                   type: object
  *                   properties:
@@ -103,6 +103,7 @@ const blockUser = async (req, res) => {
  *                             example: a1b2c3d4
  *                           profileImageUrl:
  *                             type: string
+ *                             nullable: true
  *                             example: https://lh3.googleusercontent.com/...
  *                           blockId:
  *                             type: integer
@@ -161,7 +162,7 @@ const getBlockedUsers = async (req, res) => {
  *                   example: true
  *                 message:
  *                   type: string
- *                   example: 유저 차단을 해제했습니다.
+ *                   example: 차단을 해제했습니다.
  *       500:
  *         description: 서버 오류
  */
