@@ -196,21 +196,28 @@ router.post('/register', async (req, res) => {
         return res.status(400).json({ success: false, message: "tempToken과 nickname은 필수입니다." });
     }
 
+    // 1. 토큰 검증
+    let payload;
     try {
-        const payload = jwt.verify(tempToken, process.env.JWT_SECRET);
+        payload = jwt.verify(tempToken, process.env.JWT_SECRET);
+    } catch (error) {
+        return res.status(401).json({ success: false, message: "유효하지 않은 tempToken입니다." });
+    }
 
-        if (!payload.isNewUser) {
-            return res.status(400).json({ success: false, message: "유효하지 않은 요청입니다." });
-        }
+    if (!payload.isNewUser) {
+        return res.status(400).json({ success: false, message: "유효하지 않은 요청입니다." });
+    }
 
-        // 닉네임 중복 확인
+    try {
         const db = require('../models');
+
+        // 2. 닉네임 중복 확인
         const exists = await db.user.findOne({ where: { nickname } });
         if (exists) {
             return res.status(400).json({ success: false, message: "이미 사용 중인 닉네임입니다." });
         }
 
-        // userCode 생성
+        // 3. userCode 생성
         let userCode;
         let codeExists;
         do {
@@ -218,7 +225,7 @@ router.post('/register', async (req, res) => {
             codeExists = await db.user.findOne({ where: { userCode } });
         } while (codeExists);
 
-        // 유저 생성 (기본 이미지 사용)
+        // 4. 유저 생성 (기본 이미지 사용)
         const newUser = await db.user.create({
             googleId: payload.googleId,
             email: payload.email,
@@ -228,14 +235,14 @@ router.post('/register', async (req, res) => {
             updatedAt: new Date(),
         });
 
-        // 정식 토큰 발급
+        // 5. 정식 토큰 발급
         const accessToken = generateAccessToken({ id: newUser.userId, email: newUser.email });
         const refreshToken = generateRefreshToken({ id: newUser.userId });
 
         return res.status(201).json({ success: true, accessToken, refreshToken });
 
     } catch (error) {
-        return res.status(401).json({ success: false, message: "유효하지 않은 tempToken입니다." });
+        return res.status(500).json({ success: false, message: "서버 오류가 발생했습니다." });
     }
 });
 
