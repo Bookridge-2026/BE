@@ -519,6 +519,133 @@ const getJoinedRooms = async (req, res) => {
   }
 };
 
+/**
+ * @swagger
+ * /api/rooms/my:
+ *   get:
+ *     summary: 내 방 목록 조회
+ *     description: |
+ *       state 값에 따라 다른 데이터를 반환합니다.
+ *       - waiting: 초대받은 방(invitedRooms), 내가 만든 방(leaderRooms), 다른 사용자가 만든 방(otherRooms)
+ *       - ongoing/closed: 내가 만든 방(leaderRooms), 다른 사용자가 만든 방(otherRooms)
+ *     tags: [Room]
+ *     security:
+ *       - Authorization: []
+ *     parameters:
+ *       - in: query
+ *         name: state
+ *         required: true
+ *         schema:
+ *           type: string
+ *           enum: [waiting, ongoing, closed]
+ *         example: waiting
+ *     responses:
+ *       200:
+ *         description: 조회 성공
+ *         content:
+ *           application/json:
+ *             examples:
+ *               waiting:
+ *                 summary: "state=waiting (대기 중인 방)"
+ *                 description: "memberId = 해당 방에서 현재 사용자의 member 테이블 PK"
+ *                 value:
+ *                   success: true
+ *                   data:
+ *                     invitedRooms:
+ *                       - type: "invited"
+ *                         roomId: 1
+ *                         memberId: 5
+ *                         book:
+ *                           title: "앵무새 죽이기"
+ *                           publisher: "열린 책들"
+ *                         invitedBy: "홍길동"
+ *                     leaderRooms:
+ *                       - type: "leader"
+ *                         roomId: 2
+ *                         memberId: 1
+ *                         book:
+ *                           title: "채식주의자"
+ *                           publisher: "창비"
+ *                         currentMembers: 2
+ *                         atLeastPeople: 3
+ *                         pendingMembers:
+ *                           - memberId: 7
+ *                             userId: 3
+ *                             nickname: "김철수"
+ *                     otherRooms:
+ *                       - type: "other"
+ *                         roomId: 3
+ *                         memberId: 4
+ *                         book:
+ *                           title: "82년생 김지영"
+ *                           publisher: "민음사"
+ *                         currentMembers: 3
+ *                         atLeastPeople: 2
+ *                         myState: "pending"
+ *                         myNickname: "홍길동"
+ *               ongoing:
+ *                 summary: "state=ongoing (진행 중인 방)"
+ *                 description: "memberId = 해당 방에서 현재 사용자의 member 테이블 PK"
+ *                 value:
+ *                   success: true
+ *                   data:
+ *                     leaderRooms:
+ *                       - type: "leader"
+ *                         roomId: 4
+ *                         memberId: 2
+ *                         book:
+ *                           title: "어린 왕자"
+ *                           publisher: "문학동네"
+ *                     otherRooms:
+ *                       - type: "other"
+ *                         roomId: 5
+ *                         memberId: 9
+ *                         book:
+ *                           title: "1984"
+ *                           publisher: "민음사"
+ *               closed:
+ *                 summary: "state=closed (종료된 방)"
+ *                 description: "memberId = 해당 방에서 현재 사용자의 member 테이블 PK"
+ *                 value:
+ *                   success: true
+ *                   data:
+ *                     leaderRooms:
+ *                       - type: "leader"
+ *                         roomId: 6
+ *                         memberId: 3
+ *                         book:
+ *                           title: "데미안"
+ *                           publisher: "민음사"
+ *                     otherRooms:
+ *                       - type: "other"
+ *                         roomId: 7
+ *                         memberId: 11
+ *                         book:
+ *                           title: "노르웨이의 숲"
+ *                           publisher: "문학사상"
+ *       400:
+ *         description: 잘못된 state 값
+ *       500:
+ *         description: 서버 오류
+ */
+const getMyRooms = async (req, res) => {
+    try {
+        const userId = req.user.userId;
+        const nickname = req.user.nickname;
+        const { state } = req.query;
+
+        const validStates = ["waiting", "ongoing", "closed"];
+        if (!state || !validStates.includes(state)) {
+            return res.status(400).json({ success: false, message: "state 값은 waiting, ongoing, closed 중 하나여야 합니다." });
+        }
+
+        const rooms = await roomService.getMyRooms(userId, state, nickname);
+        return res.status(200).json({ success: true, data: rooms });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 module.exports = {
   getRooms,
   createRoom,
@@ -530,4 +657,5 @@ module.exports = {
   getMembers,
   getMembersProgress,
   getJoinedRooms,
+  getMyRooms,
 };

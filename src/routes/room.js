@@ -14,6 +14,10 @@ const isLogin = passport.authenticate("jwt", { session: false });
 // 참여 중인 방 조회 (홈)
 router.get("/joined", isLogin, roomController.getJoinedRooms);
 
+// 내 방 조회 (마이페이지)
+router.get("/my", isLogin, roomController.getMyRooms);
+
+
 // 방 목록 / 생성
 // GET  /api/rooms?keyword=해리포터&status=waiting&page=1
 router.get("/", roomController.getRooms);
