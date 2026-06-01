@@ -23,7 +23,7 @@ const generateRefreshToken = (user) => {
   );
 }; 
 
-const googleVerify = async (profile) => {
+/*const googleVerify = async (profile) => {
   const email = profile.emails?.[0]?.value; // Google 프로필에서 이메일 추출
   if (!email) {
     throw new Error(`profile.email was not found: ${profile}`);
@@ -54,24 +54,56 @@ const googleVerify = async (profile) => {
 
   return { id: created.userId, email: created.email, name: created.nickname };
   
+};*/
+
+const googleVerify = async (profile) => {
+    const email = profile.emails?.[0]?.value;
+    if (!email) throw new Error(`profile.email was not found`);
+
+    // 기존 유저 조회
+    const user = await User.findOne({ where: { email } });
+    if (user) {
+        // 기존 유저 → 유저 정보만 반환
+        return {
+            isNewUser: false,
+            id: user.userId,
+            email: user.email
+        };
+    }
+
+    // 신규 유저 → 임시 토큰용 데이터 반환
+    return {
+        isNewUser: true,
+        googleId: profile.id,
+        email: email,
+    };
 };
 
 const googleStrategy = new GoogleStrategy(
   {
     clientID: process.env.PASSPORT_GOOGLE_CLIENT_ID,
     clientSecret: process.env.PASSPORT_GOOGLE_CLIENT_SECRET,
-    callbackURL: '/api/oauth2/callback/google',
+    callbackURL: process.env.GOOGLE_CALLBACK_URL,
     scope: ['email', 'profile'],
   },
   async (accessToken, refreshToken, profile, cb) => {
     try {
-      const user = await googleVerify(profile); // 콜백 URL로 요청 오면 자동 실행
-      const jwtAccessToken = generateAccessToken(user); // 1시간 토큰 발급
-      const jwtRefreshToken = generateRefreshToken(user); // 14일 토큰 발급
+      const user = await googleVerify(profile);
+
+      if (user.isNewUser) {
+        // 신규 유저 → 구글 정보만 반환
+        return cb(null, {
+          isNewUser: true,
+          googleId: user.googleId,
+          email: user.email,
+        });
+      }
+
+      // 기존 유저 → 유저 정보만 반환 (토큰 발급은 콜백 API에서)
       return cb(null, {
-        accessToken: jwtAccessToken,
-        refreshToken: jwtRefreshToken,
-        user: user,
+        isNewUser: false,
+        id: user.id,
+        email: user.email,
       });
     } catch (err) {
       return cb(err);

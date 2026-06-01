@@ -1,5 +1,6 @@
 const vision = require('@google-cloud/vision');
 const { member: Member, room:Room, ocrPage:OcrPage, book:Book, sequelize, ocrHighlight:OcrHighlight, ocrComment:OcrComment } = require('../models');
+const notificationService = require("./notification.service");
 
 const client = new vision.ImageAnnotatorClient();
 
@@ -124,6 +125,12 @@ exports.newOcrComment = async (selectedText, startIndex, endIndex, content, ocrP
     }, { transaction: t });
   })
 
+  // OCR 알림
+  await notificationService.createOcrNotification({
+    ocrHighlight: highlight,
+    senderMemberId: member.memberId,
+  }).catch(console.error);
+
   return {
     highlightId: highlight.ocrHighlightId,
     ocrPageId: ocrPage.ocrPageId,
@@ -163,6 +170,12 @@ exports.existingOcrComment = async(content, highlightId, member) => {
     memberId:member.memberId,
     ocrHighlightId: highlight.ocrHighlightId
   });
+
+  // OCR 알림
+  await notificationService.createOcrNotification({
+    ocrHighlight: highlight,
+    senderMemberId: member.memberId,
+  }).catch(console.error);
 
   const updatedHighlight = await OcrHighlight.findByPk(highlightId, {
     include: [{
