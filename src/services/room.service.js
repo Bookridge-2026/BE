@@ -292,7 +292,6 @@ const startRoom = async (userId, roomId) => {
     throw new Error("모집 중인 방만 시작할 수 있습니다.");
 
   // 최소 인원 검증
-  /*
   const memberCount = await db.member.count({
     where: { roomId, state: "attend" },
   });
@@ -301,7 +300,6 @@ const startRoom = async (userId, roomId) => {
       `최소 ${room.atLeastPeople}명 이상이어야 방을 시작할 수 있습니다.`,
     );
   }
-*/
   await room.update({ state: "ongoing", startDate: new Date() });
   return room;
 };
