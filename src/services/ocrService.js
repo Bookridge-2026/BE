@@ -4,6 +4,28 @@ const notificationService = require("./notification.service");
 
 const client = new vision.ImageAnnotatorClient();
 
+exports.getOcrPage = async (roomId, page) => {
+
+  const pageNum = parseInt(page);
+
+  if (!page || isNaN(pageNum) || pageNum === 0) {
+    const err = new Error('쪽수를 찾을 수 없습니다.');
+    err.code = 'PAGE_NOT_FOUND';
+    err.status = 422;
+    throw err;
+  }
+
+  const ocrPages = await OcrPage.findAll({
+    where: {
+      roomId,
+      page: pageNum
+    },
+    attributes: ['ocrPageId', 'page', 'roomId']
+  });
+
+  return ocrPages;
+}
+
 exports.extractTextFromImage = async (imageBuffer) => {
 
   let result;
@@ -72,6 +94,10 @@ exports.saveOcr = async (page, text, roomId, member) => {
       roomId
     }, { transaction: t });
 
+    if (member.maxPage < ocrPage.page) {
+      member.maxPage = ocrPage.page;
+      await member.save({ transaction: t });
+    }
   
     await member.decrement('ocrChance', { by: 1, transaction: t });
   })
@@ -109,7 +135,7 @@ exports.newOcrComment = async (selectedText, startIndex, endIndex, content, ocrP
 
   let highlight, ocrComment;
 
-  const newOcrComment = await sequelize.transaction(async (t) => {
+  await sequelize.transaction(async (t) => {
 
     highlight = await OcrHighlight.create({
       selectedText,
@@ -117,6 +143,11 @@ exports.newOcrComment = async (selectedText, startIndex, endIndex, content, ocrP
       endIndex,
       ocrPageId:ocrPageId
     }, { transaction: t });
+
+    if (member.maxPage < ocrPage.page) {
+      member.maxPage = ocrPage.page;
+      await member.save({ transaction: t });
+    }
 
     ocrComment = await OcrComment.create({
       comment: content,
@@ -165,24 +196,36 @@ exports.existingOcrComment = async(content, highlightId, member) => {
     throw err;
   }
 
-  const ocrComment = await OcrComment.create({
-    comment: content,
-    memberId:member.memberId,
-    ocrHighlightId: highlight.ocrHighlightId
-  });
+  let updatedHighlight;
 
-  // OCR 알림
+  await sequelize.transaction(async (t) => {
+
+    await OcrComment.create({
+      comment: content,
+      memberId:member.memberId,
+      ocrHighlightId: highlight.ocrHighlightId
+    }, { transaction: t });
+
+    updatedHighlight = await OcrHighlight.findByPk(highlightId, {
+      include: [{
+        model: OcrComment,
+        as: 'ocrComments',
+        include: [{ model: Member}]
+      }],
+      transaction: t
+    });
+
+    const ocrPage = await OcrPage.findByPk(ocrPageId, { transaction: t });
+
+    if (member.maxPage < ocrPage.page) {
+      member.maxPage = ocrPage.page;
+      await member.save({ transaction: t });
+    }
+  })
+
   await notificationService.createOcrNotification({
     ocrHighlight: highlight,
     senderMemberId: member.memberId,
-  }).catch(console.error);
-
-  const updatedHighlight = await OcrHighlight.findByPk(highlightId, {
-    include: [{
-      model: OcrComment,
-      as: 'ocrComments',
-      include: [{ model: Member}] 
-    }]
   });
 
   return {
