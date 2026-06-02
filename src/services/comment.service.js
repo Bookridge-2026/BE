@@ -21,7 +21,7 @@ const getPages = async (roomId) => {
                 required: true,       
             },
         ],
-        group: ["comment.page"],
+        group: ["page"],
     });
 
 
@@ -36,7 +36,7 @@ const getPages = async (roomId) => {
                 required: true,
             },
         ],
-        group: ["emoji.page"],
+        group: ["page"],
     });
 
     const commentPageNums = commentPages.map((c) => c.page);
