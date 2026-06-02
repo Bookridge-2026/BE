@@ -10,7 +10,7 @@ const passport = require('passport');
 const multer = require('multer');
 const { subscribe } = require('../controllers/sseController');    
 const { isMember } = require('../middlewares/isMember');          
-const {extractText, saveOcr, newOcrComment, existingOcrComment, getOcrHighlights, getOcrComments, deleteOcrComment} = require('../controllers/ocrController');
+const {extractText, saveOcr, newOcrComment, existingOcrComment, getOcrHighlights, getOcrComments, deleteOcrComment, getOcrPage} = require('../controllers/ocrController');
 const { googleStrategy, jwtStrategy } = require('../config/auth.config');
 
 passport.use(googleStrategy);
@@ -18,6 +18,98 @@ passport.use(jwtStrategy);
 
 const isLogin = passport.authenticate('jwt', { session: false });
 const upload = multer({ storage: multer.memoryStorage() });
+
+/**
+ * @swagger
+ * /api/ocr/rooms/{roomId}/page/{page}:
+ *   get:
+ *     summary: OCR 페이지 조회
+ *     description: 특정 방의 특정 쪽수에 해당하는 OCR 페이지 목록을 조회합니다.
+ *     tags: [OCR]
+ *     parameters:
+ *       - in: path
+ *         name: roomId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *           format: int64
+ *         description: 조회할 방의 ID
+ *       - in: path
+ *         name: page
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 조회할 쪽수 (1 이상의 정수)
+ *     responses:
+ *       '200':
+ *         description: OCR 페이지 조회 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: 해당 쪽수에 존재하는 OCR 페이지를 성공적으로 불러왔습니다.
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       ocrPageId:
+ *                         type: integer
+ *                         format: int64
+ *                         example: 1
+ *                       page:
+ *                         type: integer
+ *                         example: 3
+ *                       roomId:
+ *                         type: integer
+ *                         format: int64
+ *                         example: 1
+ *       '422':
+ *         description: 유효하지 않은 쪽수
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: 쪽수를 찾을 수 없습니다.
+ *                 error:
+ *                   type: object
+ *                   properties:
+ *                     code:
+ *                       type: string
+ *                       example: PAGE_NOT_FOUND
+ *       '500':
+ *         description: 서버 내부 오류
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: 서버 오류가 발생했습니다.
+ *                 error:
+ *                   type: object
+ *                   properties:
+ *                     code:
+ *                       type: string
+ *                       example: null
+ */
+router.get('/rooms/:roomId/page/:page', isLogin, isMember, getOcrPage)
 
 /**
  * @swagger
