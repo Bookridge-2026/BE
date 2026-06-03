@@ -1,6 +1,7 @@
 const vision = require('@google-cloud/vision');
 const { member: Member, room:Room, ocrPage:OcrPage, book:Book, sequelize, ocrHighlight:OcrHighlight, ocrComment:OcrComment } = require('../models');
 const notificationService = require("./notification.service");
+const blockService = require("./block.service");
 
 const client = new vision.ImageAnnotatorClient();
 
@@ -141,7 +142,7 @@ exports.newOcrComment = async (selectedText, startIndex, endIndex, content, ocrP
       selectedText,
       startIndex,
       endIndex,
-      ocrPageId:ocrPageId
+      ocrPageId:ocrPageId,
     }, { transaction: t });
 
     if (member.maxPage < ocrPage.page) {
@@ -248,7 +249,7 @@ exports.getOcrHighlights = async (ocrPageId) => {
   const ocrPage = await OcrPage.findByPk(ocrPageId, {
     include:[{
       model: OcrHighlight,
-      as: 'ocrHighlights'
+      as: 'ocrHighlights',
     }]
   });
 
@@ -275,7 +276,7 @@ exports.getOcrHighlights = async (ocrPageId) => {
 
 }
 
-exports.getOcrComments = async(highlightId) => {
+exports.getOcrComments = async(highlightId, userId) => {
 
   const highlight = await OcrHighlight.findByPk(highlightId, {
     include: [{
@@ -292,13 +293,21 @@ exports.getOcrComments = async(highlightId) => {
     throw err;
   }
 
+  let blockedUserIds = [];
+  if (userId) {
+    blockedUserIds = await blockService.getBlockedUserIds(userId);
+  }
+  const blockedUserIdSet = new Set(blockedUserIds.map(String));
+
   return {
     highlightId: highlight.ocrHighlightId,
     ocrPageId: highlight.ocrPageId,
     selectedText: highlight.selectedText,
     startIndex: highlight.startIndex,
     endIndex: highlight.endIndex,
-    ocrComments: highlight.ocrComments.map(comment => ({
+    ocrComments: highlight.ocrComments
+    .filter(comment => !blockedUserIdSet.has(String(comment.Member.userId)))
+    .map(comment => ({
       ocrCommentId: comment.ocrCommentId,
       content: comment.comment,
       color: comment.Member.color,

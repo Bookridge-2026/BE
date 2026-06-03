@@ -10,6 +10,7 @@ const {
   room: Room, 
   book: Book 
 } = require("../models");
+const blockService = require("../services/block.service");
 
 
 
@@ -131,6 +132,8 @@ const {
 exports.getNotifications = async (req, res) => {
   try {
     const receiverUserId = req.user.userId;
+    const blockedUserIds = await blockService.getBlockedUserIds(receiverUserId);
+    const blockedUserIdSet = new Set(blockedUserIds.map(String));
 
     const notifications = await Notification.findAll({
       where: { receiverUserId },
@@ -200,7 +203,13 @@ exports.getNotifications = async (req, res) => {
       ],
     });
 
-    const formatted = notifications.map((n) => formatNotification(n));
+    const formatted = notifications
+      .filter((n) => {
+        const senderId = n.senderUser?.userId ?? n.senderMember?.user?.userId;
+        if (!senderId) return true;
+        return !blockedUserIdSet.has(String(senderId));
+      })
+      .map((n) => formatNotification(n));
 
     return res.status(200).json({
       success: true,

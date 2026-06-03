@@ -18,6 +18,24 @@ const getBlockedUserIds = async (userId) => {
   return blocks.map((block) => block.blockedUserId);
 };
 
+const getBlockedOrBlockingUserIds = async (userId) => {
+  const blocks = await db.userBlock.findAll({
+    where: {
+      [Op.or]: [{ blockerId: userId }, { blockedUserId: userId }],
+    },
+    attributes: ["blockerId", "blockedUserId"],
+  });
+
+  return blocks
+    .map((block) =>
+      Number(block.blockerId) === Number(userId)
+        ? block.blockedUserId
+        : block.blockerId,
+    )
+    .filter((id) => Number(id) !== Number(userId))
+    .map((id) => String(id));
+};
+
 const blockUser = async (blockerId, blockedUserId) => {
   if (Number(blockerId) === Number(blockedUserId)) {
     throw new Error("자기 자신을 차단할 수 없습니다.");
@@ -112,6 +130,7 @@ const getBlockedUsers = async (userId) => {
 module.exports = {
   isBlocked,
   getBlockedUserIds,
+  getBlockedOrBlockingUserIds,
   blockUser,
   unblockUser,
   getBlockedUsers,

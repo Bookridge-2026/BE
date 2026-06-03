@@ -43,7 +43,7 @@ router.get("/:roomId/songs/recommendations", isLogin, songRecommendationControll
 // 방 세부 기본
 router.get("/:roomId", roomController.getRoomDetail);
 router.get("/:roomId/pages", commentController.getPages);
-router.get("/:roomId/members/progress", roomController.getMembersProgress);
+router.get("/:roomId/members/progress", isLogin, roomController.getMembersProgress);
 
 // 멤버 조회
 router.get("/:roomId/members", roomController.getMembers);
@@ -66,7 +66,7 @@ router.delete("/:roomId/members/:memberId", isLogin, memberController.kickMember
 //---------------------------------
 
 // 일반 코멘트
-router.get("/:roomId/comments", commentController.getComments);
+router.get("/:roomId/comments", isLogin, commentController.getComments);
 router.post("/:roomId/comments", isLogin, commentController.createComment);
 router.patch(
   "/:roomId/comments/:commentId",
@@ -82,6 +82,7 @@ router.delete(
 // 대댓글
 router.get(
   "/:roomId/comments/:commentId/replies",
+  isLogin,
   commentController.getReplies,
 );
 router.post(
@@ -96,7 +97,7 @@ router.delete(
 );
 
 // 이모지 반응
-router.get("/:roomId/reactions", emojiController.getReactions);
+router.get("/:roomId/reactions", isLogin, emojiController.getReactions);
 router.post("/:roomId/reactions", isLogin, emojiController.addReaction);
 router.delete(
   "/:roomId/reactions/:emojiId",
