@@ -60,7 +60,7 @@ const getRooms = async ({ keyword, status, page = 1, size = 10 }) => {
       {
         model: db.member,
         as: "members",
-        attributes: ["memberId"],
+        attributes: ["memberId", "state"],
       },
     ],
     distinct: true,
@@ -77,7 +77,7 @@ const getRooms = async ({ keyword, status, page = 1, size = 10 }) => {
     poke: room.poke,
     detail: room.detail,
     startDate: room.startDate,
-    currentMembers: room.members.length,
+    currentMembers: room.members.filter((m) => m.state === "attend").length,
     book: room.book,
   }));
 
@@ -193,11 +193,11 @@ const joinRoom = async (userId, roomId) => {
   const usedColors = room.members.map((m) => m.color);
   const color = pickRandomColor(usedColors);
 
-  // 6) 멤버 등록 (pending 상태로 저장 - 방장 수락 대기)
+  // 6) 멤버 등록 (pending 상태 — 방장 수락 후 attend로 변경)
   const member = await db.member.create({
     userId,
     roomId,
-    state: "attend",
+    state: "pending",
     particTime: new Date(),
     role: "member",
     ocrChance: 5,

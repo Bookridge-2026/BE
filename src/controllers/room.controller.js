@@ -220,7 +220,7 @@ const joinRoom = async (req, res) => {
     const member = await roomService.joinRoom(userId, roomId);
     return res.status(201).json({
       success: true,
-      message: "방에 참여했습니다.",
+      message: "입장 요청이 전송되었습니다. 방장의 수락을 기다려주세요.",
       data: {
         memberId: member.memberId,
         role: member.role,
@@ -554,24 +554,24 @@ const getJoinedRooms = async (req, res) => {
  *         description: 방 없음
  */
 const acceptInvite = async (req, res) => {
-    try {
-        const userId = req.user.userId;
-        const { roomId } = req.params;
+  try {
+    const userId = req.user.userId;
+    const { roomId } = req.params;
 
-        const member = await roomService.acceptInvite(userId, roomId);
-        return res.status(200).json({
-            success: true,
-            message: "초대를 수락했습니다.",
-            data: {
-                memberId: member.memberId,
-                userId: member.userId,
-                state: member.state,
-            },
-        });
-    } catch (error) {
-        const status = error.message.includes("찾을 수 없습니다") ? 404 : 400;
-        return res.status(status).json({ success: false, message: error.message });
-    }
+    const member = await roomService.acceptInvite(userId, roomId);
+    return res.status(200).json({
+      success: true,
+      message: "초대를 수락했습니다.",
+      data: {
+        memberId: member.memberId,
+        userId: member.userId,
+        state: member.state,
+      },
+    });
+  } catch (error) {
+    const status = error.message.includes("찾을 수 없습니다") ? 404 : 400;
+    return res.status(status).json({ success: false, message: error.message });
+  }
 };
 
 /**
@@ -604,19 +604,19 @@ const acceptInvite = async (req, res) => {
  *         description: 방 없음
  */
 const rejectInvite = async (req, res) => {
-    try {
-        const userId = req.user.userId;
-        const { roomId } = req.params;
+  try {
+    const userId = req.user.userId;
+    const { roomId } = req.params;
 
-        await roomService.rejectInvite(userId, roomId);
-        return res.status(200).json({
-            success: true,
-            message: "초대를 거절했습니다.",
-        });
-    } catch (error) {
-        const status = error.message.includes("찾을 수 없습니다") ? 404 : 400;
-        return res.status(status).json({ success: false, message: error.message });
-    }
+    await roomService.rejectInvite(userId, roomId);
+    return res.status(200).json({
+      success: true,
+      message: "초대를 거절했습니다.",
+    });
+  } catch (error) {
+    const status = error.message.includes("찾을 수 없습니다") ? 404 : 400;
+    return res.status(status).json({ success: false, message: error.message });
+  }
 };
 
 /**
@@ -660,24 +660,24 @@ const rejectInvite = async (req, res) => {
  *         description: 방 없음
  */
 const acceptMember = async (req, res) => {
-    try {
-        const leaderId = req.user.userId;
-        const { roomId, userId } = req.params;
+  try {
+    const leaderId = req.user.userId;
+    const { roomId, userId } = req.params;
 
-        const member = await roomService.acceptMember(leaderId, roomId, userId);
-        return res.status(200).json({
-            success: true,
-            message: "입장 요청을 수락했습니다.",
-            data: {
-                memberId: member.memberId,
-                userId: member.userId,
-                state: member.state,
-            },
-        });
-    } catch (error) {
-        const status = error.message.includes("찾을 수 없습니다") ? 404 : 400;
-        return res.status(status).json({ success: false, message: error.message });
-    }
+    const member = await roomService.acceptMember(leaderId, roomId, userId);
+    return res.status(200).json({
+      success: true,
+      message: "입장 요청을 수락했습니다.",
+      data: {
+        memberId: member.memberId,
+        userId: member.userId,
+        state: member.state,
+      },
+    });
+  } catch (error) {
+    const status = error.message.includes("찾을 수 없습니다") ? 404 : 400;
+    return res.status(status).json({ success: false, message: error.message });
+  }
 };
 
 /**
@@ -717,19 +717,19 @@ const acceptMember = async (req, res) => {
  *         description: 방 없음
  */
 const rejectMember = async (req, res) => {
-    try {
-        const leaderId = req.user.userId;
-        const { roomId, userId } = req.params;
+  try {
+    const leaderId = req.user.userId;
+    const { roomId, userId } = req.params;
 
-        await roomService.rejectMember(leaderId, roomId, userId);
-        return res.status(200).json({
-            success: true,
-            message: "입장 요청을 거절했습니다.",
-        });
-    } catch (error) {
-        const status = error.message.includes("찾을 수 없습니다") ? 404 : 400;
-        return res.status(status).json({ success: false, message: error.message });
-    }
+    await roomService.rejectMember(leaderId, roomId, userId);
+    return res.status(200).json({
+      success: true,
+      message: "입장 요청을 거절했습니다.",
+    });
+  } catch (error) {
+    const status = error.message.includes("찾을 수 없습니다") ? 404 : 400;
+    return res.status(status).json({ success: false, message: error.message });
+  }
 };
 
 /**
@@ -769,13 +769,13 @@ const rejectMember = async (req, res) => {
  *         description: 서버 오류
  */
 const getMyBooks = async (req, res) => {
-    try {
-        const userId = req.user.userId;
-        const result = await roomService.getMyBooks(userId);
-        return res.status(200).json({ success: true, data: result });
-    } catch (error) {
-        return res.status(500).json({ success: false, message: error.message });
-    }
+  try {
+    const userId = req.user.userId;
+    const result = await roomService.getMyBooks(userId);
+    return res.status(200).json({ success: true, data: result });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
 };
 
 /**
@@ -888,21 +888,26 @@ const getMyBooks = async (req, res) => {
  *         description: 서버 오류
  */
 const getMyRooms = async (req, res) => {
-    try {
-        const userId = req.user.userId;
-        const nickname = req.user.nickname;
-        const { state } = req.query;
+  try {
+    const userId = req.user.userId;
+    const nickname = req.user.nickname;
+    const { state } = req.query;
 
-        const validStates = ["waiting", "ongoing", "closed"];
-        if (!state || !validStates.includes(state)) {
-            return res.status(400).json({ success: false, message: "state 값은 waiting, ongoing, closed 중 하나여야 합니다." });
-        }
-
-        const rooms = await roomService.getMyRooms(userId, state, nickname);
-        return res.status(200).json({ success: true, data: rooms });
-    } catch (error) {
-        return res.status(500).json({ success: false, message: error.message });
+    const validStates = ["waiting", "ongoing", "closed"];
+    if (!state || !validStates.includes(state)) {
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "state 값은 waiting, ongoing, closed 중 하나여야 합니다.",
+        });
     }
+
+    const rooms = await roomService.getMyRooms(userId, state, nickname);
+    return res.status(200).json({ success: true, data: rooms });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
 };
 
 module.exports = {
