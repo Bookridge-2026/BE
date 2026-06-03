@@ -80,8 +80,9 @@ const getPages = async (req, res) => {
 const getComments = async (req, res) => {
     try {
         const { roomId } = req.params;
-        const { page } = req.query;   
-        const comments = await commentService.getComments(roomId, page);
+        const { page } = req.query;
+        const userId = req.user?.userId;
+        const comments = await commentService.getComments(roomId, page, userId);
         return res.status(200).json({ success: true, data: comments });
     } catch (error) {
         return res.status(500).json({ success: false, message: error.message });
@@ -258,7 +259,8 @@ const deleteComment = async (req, res) => {
 const getReplies = async (req, res) => {
     try {
         const { commentId } = req.params;
-        const replies = await commentService.getReplies(commentId);
+        const userId = req.user?.userId;
+        const replies = await commentService.getReplies(commentId, userId);
         return res.status(200).json({ success: true, data: replies });
     } catch (error) {
         return res.status(500).json({ success: false, message: error.message });

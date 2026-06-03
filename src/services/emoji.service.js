@@ -1,5 +1,6 @@
 const db = require("../models");
 const notificationService = require("./notification.service");
+const blockService = require("./block.service");
 
 const EMOJI_CDN = {
     1: "https://cdn.jsdelivr.net/gh/twitter/twemoji@latest/assets/svg/1f62e.svg", // 😮
@@ -18,7 +19,7 @@ const getMemberByUserId = async (roomId, userId) => {
 };
 
 // 페이지별 이모지 조회
-const getReactions = async (roomId, page) => {
+const getReactions = async (roomId, page, userId) => {
     if (!page) return [];
 
     const reactions = await db.emoji.findAll({
@@ -29,7 +30,7 @@ const getReactions = async (roomId, page) => {
                 as: "member",
                 where: { roomId },
                 required: true,
-                attributes: ["memberId", "color"],
+                attributes: ["memberId", "color", "userId"],
                 include: [{ model: db.user, as: "user", attributes: ["nickname"] }],
             },
             {
@@ -41,7 +42,14 @@ const getReactions = async (roomId, page) => {
         order: [["createdAt", "ASC"]],
     });
 
-    return reactions.map((r) => ({
+    const blockedUserIds = userId
+        ? await blockService.getBlockedUserIds(userId)
+        : [];
+    const blockedUserIdSet = new Set(blockedUserIds.map(String));
+
+    return reactions
+    .filter((r) => !blockedUserIdSet.has(String(r.member.userId)))
+    .map((r) => ({
         emojiId: r.emojiId,
         page: r.page,
         emojiType: {

@@ -1,6 +1,7 @@
 const { Op } = require("sequelize");
 const db = require("../models");
 const bookService = require("./book.service");
+const blockService = require("./block.service");
 
 // 고유 색상 부여
 const COLOR_PALETTE = [
@@ -430,7 +431,7 @@ const getMembers = async (roomId) => {
 };
 
 //멤버 진행도
-const getMembersProgress = async (roomId) => {
+const getMembersProgress = async (roomId, userId) => {
   const roomData = await db.room.findOne({
     where: { roomId },
     include: [
@@ -442,7 +443,7 @@ const getMembersProgress = async (roomId) => {
       {
         model: db.member,
         as: "members",
-        attributes: ["memberId", "color", "maxPage"],
+        attributes: ["memberId", "userId", "color", "maxPage"],
         include: [
           {
             model: db.user,
@@ -457,8 +458,14 @@ const getMembersProgress = async (roomId) => {
   if (!roomData) throw new Error("방을 찾을 수 없습니다.");
 
   const totalPage = roomData.book.totalPage;
+  const blockedUserIds = userId
+    ? await blockService.getBlockedUserIds(userId)
+    : [];
+  const blockedUserIdSet = new Set(blockedUserIds.map(String));
 
-  const progress = roomData.members.map((member) => ({
+  const progress = roomData.members
+  .filter((member) => !blockedUserIdSet.has(String(member.userId)))
+  .map((member) => ({
     memberId: member.memberId,
     nickname: member.user.nickname,
     profileImageUrl: member.user.profileImageUrl,
@@ -496,7 +503,7 @@ const getJoinedRooms = async (userId) => {
         model: db.member,
         as: "allMembers",
         where: { state: "attend" },
-        attributes: ["color"],
+        attributes: ["color", "userId"],
         include: [
           {
             model: db.user,
@@ -510,6 +517,9 @@ const getJoinedRooms = async (userId) => {
   });
 
   if (rooms.length === 0) throw new Error("참여 중인 방이 없습니다");
+
+  const blockedUserIds = await blockService.getBlockedUserIds(userId);
+  const blockedUserIdSet = new Set(blockedUserIds.map(String));
 
   return rooms.map((room) => {
     const myMember = room.members[0];
@@ -529,7 +539,9 @@ const getJoinedRooms = async (userId) => {
     }
 
     // 멤버 프로필 이미지
-    const memberProfiles = room.allMembers.map((m) => ({
+    const memberProfiles = room.allMembers
+      .filter((m) => !blockedUserIdSet.has(String(m.userId)))
+      .map((m) => ({
       profileImageUrl: m.user.profileImageUrl,
       color: m.color,
     }));

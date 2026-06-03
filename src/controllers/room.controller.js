@@ -437,7 +437,8 @@ const getMembers = async (req, res) => {
 const getMembersProgress = async (req, res) => {
   try {
     const { roomId } = req.params;
-    const progress = await roomService.getMembersProgress(roomId);
+    const userId = req.user?.userId;
+    const progress = await roomService.getMembersProgress(roomId, userId);
     return res.status(200).json({ success: true, data: progress });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });

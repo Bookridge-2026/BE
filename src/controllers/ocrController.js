@@ -119,8 +119,9 @@ exports.existingOcrComment = async(req, res) => {
 exports.getOcrHighlights = async(req, res) => {
   try{
     const { ocrPageId } = req.params;
+    const userId = req.user?.userId;
 
-    const result = await getOcrHighlights(ocrPageId);
+    const result = await getOcrHighlights(ocrPageId, userId);
 
     res.status(200).json({ 
       success: true, 
@@ -140,8 +141,9 @@ exports.getOcrHighlights = async(req, res) => {
 exports.getOcrComments = async(req, res) => {
   try{
     const { highlightId } = req.params;
+    const userId = req.user?.userId;
 
-    const result = await getOcrComments(highlightId);
+    const result = await getOcrComments(highlightId, userId);
 
     res.status(200).json({ 
       success: true, 
