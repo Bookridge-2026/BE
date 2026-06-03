@@ -48,8 +48,9 @@ const emojiService = require("../services/emoji.service");
 const getReactions = async (req, res) => {
     try {
         const { roomId } = req.params;
-        const { page } = req.query;   
-        const reactions = await emojiService.getReactions(roomId, page);
+        const { page } = req.query;
+        const userId = req.user?.userId;
+        const reactions = await emojiService.getReactions(roomId, page, userId);
         return res.status(200).json({ success: true, data: reactions });
     } catch (error) {
         return res.status(500).json({ success: false, message: error.message });

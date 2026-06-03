@@ -1,9 +1,19 @@
-const { Op } = require("sequelize");
 const db = require("../models");
+const blockService = require("./block.service");
+
+const getAllowedTargets = async (senderUserId, targets) => {
+  const results = await Promise.all(
+    targets.map(async (m) => {
+      const blockedByReceiver = await blockService.isBlocked(m.userId, senderUserId);
+      return blockedByReceiver ? null : m;
+    })
+  );
+  return results.filter(Boolean);
+};
 
 exports.createCommentNotification = async ({ comment, senderMemberId }) => {
   const sender = await db.member.findByPk(senderMemberId, {
-    attributes: ["roomId"],
+    attributes: ["roomId", "userId"],
   });
   if (!sender) return;
 
@@ -12,9 +22,9 @@ exports.createCommentNotification = async ({ comment, senderMemberId }) => {
     attributes: ["memberId", "userId"],
   });
 
-  const targets = roomMembers.filter(
+  const targets = await getBlockedTargets(sender.userId, roomMembers.filter(
     (m) => String(m.memberId) !== String(senderMemberId)
-  );
+  ));
 
   await db.notification.bulkCreate(
     targets.map((m) => ({
@@ -39,6 +49,9 @@ exports.createReplyNotification = async ({ reply, senderMemberId }) => {
   const sender = await db.member.findByPk(senderMemberId, { attributes: ["userId"] });
   if (String(sender?.userId) === String(receiverUserId)) return;
 
+  const blockedByReceiver = await blockService.isBlocked(receiverUserId, sender.userId);
+  if (blockedByReceiver) return;
+
   await db.notification.create({
     receiverUserId,
     senderMemberId,
@@ -49,7 +62,7 @@ exports.createReplyNotification = async ({ reply, senderMemberId }) => {
 };
 
 exports.createEmojiNotification = async ({ emoji, senderMemberId }) => {
-  const sender = await db.member.findByPk(senderMemberId, { attributes: ["roomId"] });
+  const sender = await db.member.findByPk(senderMemberId, { attributes: ["roomId", "userId"] });
   if (!sender) return;
 
   const roomMembers = await db.member.findAll({
@@ -57,9 +70,9 @@ exports.createEmojiNotification = async ({ emoji, senderMemberId }) => {
     attributes: ["memberId", "userId"],
   });
 
-  const targets = roomMembers.filter(
+  const targets = await getAllowedTargets(sender.userId, roomMembers.filter(
     (m) => String(m.memberId) !== String(senderMemberId)
-  );
+  ));
 
   await db.notification.bulkCreate(
     targets.map((m) => ({
@@ -78,14 +91,17 @@ exports.createOcrNotification = async ({ ocrHighlight, senderMemberId }) => {
   });
   if (!ocrPage) return;
 
+  const sender = await db.member.findByPk(senderMemberId, { attributes: ["userId"] });
+  if (!sender) return;
+
   const roomMembers = await db.member.findAll({
     where: { roomId: ocrPage.roomId },
     attributes: ["memberId", "userId"],
   });
 
-  const targets = roomMembers.filter(
+  const targets = await getAllowedTargets(sender.userId, roomMembers.filter(
     (m) => String(m.memberId) !== String(senderMemberId)
-  );
+  ));
 
   await db.notification.bulkCreate(
     targets.map((m) => ({
@@ -101,6 +117,9 @@ exports.createOcrNotification = async ({ ocrHighlight, senderMemberId }) => {
 exports.createFriendRequestNotification = async ({ senderUserId, receiverUserId }) => {
   if (String(senderUserId) === String(receiverUserId)) return;
 
+  const blockedByReceiver = await blockService.isBlocked(receiverUserId, senderUserId);
+  if (blockedByReceiver) return;
+
   await db.notification.create({
     receiverUserId,
     senderUserId,
@@ -112,6 +131,9 @@ exports.createFriendRequestNotification = async ({ senderUserId, receiverUserId 
 
 exports.createFriendAcceptedNotification = async ({ acceptorUserId, receiverUserId }) => {
   if (String(acceptorUserId) === String(receiverUserId)) return;
+
+  const blockedByReceiver = await blockService.isBlocked(receiverUserId, acceptorUserId);
+  if (blockedByReceiver) return;
 
   await db.notification.create({
     receiverUserId,

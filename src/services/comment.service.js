@@ -1,5 +1,6 @@
 const db = require("../models");
 const notificationService = require("./notification.service");
+const blockService = require("./block.service");
 
 const getMemberByUserId = async (roomId, userId) => {
     const member = await db.member.findOne({
@@ -53,7 +54,7 @@ const getPages = async (roomId) => {
 
 
 // -- 코멘트 CRUD --
-const getComments = async (roomId, page) => {
+const getComments = async (roomId, page, userId) => {
     const where = {};
     if (page) where.page = page;
 
@@ -65,7 +66,7 @@ const getComments = async (roomId, page) => {
                 as: "member",
                 where: { roomId },
                 required: true,
-                attributes: ["memberId", "color"],
+                attributes: ["memberId", "color", "userId"],
                 include: [
                     {
                         model: db.user,
@@ -85,7 +86,14 @@ const getComments = async (roomId, page) => {
 
     if (!comments.length) return [];
 
-    return comments.map((c) => ({
+    const blockedUserIds = userId
+        ? await blockService.getBlockedOrBlockingUserIds(userId)
+        : [];
+    const blockedUserIdSet = new Set(blockedUserIds.map(String));
+
+    return comments
+    .filter((c) => !blockedUserIdSet.has(String(c.member.userId)))
+    .map((c) => ({
         commentId: c.commentId,
         comment: c.isDeleted ? "삭제된 코멘트입니다" : c.comment,
         content: c.isDeleted ? null : c.content,
@@ -164,14 +172,14 @@ const deleteComment = async (roomId, userId, commentId) => {
 
 // -- 대댓글 CRD --
 // 대댓글 목록 조회
-const getReplies = async (commentId) => {
+const getReplies = async (commentId, userId) => {
     const replies = await db.reply.findAll({
         where: { commentId },
         include: [
             {
                 model: db.member,
                 as: "member",
-                attributes: ["memberId", "color"],
+                attributes: ["memberId", "color", "userId"],
                 include: [
                     {
                         model: db.user,
@@ -184,7 +192,14 @@ const getReplies = async (commentId) => {
         order: [["createdAt", "ASC"]],
     });
 
-    return replies.map((r) => ({
+    const blockedUserIds = userId
+        ? await blockService.getBlockedUserIds(userId)
+        : [];
+    const blockedUserIdSet = new Set(blockedUserIds.map(String));
+
+    return replies
+    .filter((r) => !blockedUserIdSet.has(String(r.member.userId)))
+    .map((r) => ({
         replyId: r.replyId,
         content: r.content,
         createdAt: r.createdAt,
