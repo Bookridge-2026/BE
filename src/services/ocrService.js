@@ -216,7 +216,14 @@ exports.existingOcrComment = async(content, highlightId, member) => {
       transaction: t
     });
 
-    const ocrPage = await OcrPage.findByPk(ocrPageId, { transaction: t });
+    const ocrPage = await OcrPage.findByPk(updatedHighlight.ocrPageId, { transaction: t });
+
+    if (!ocrPage) {
+      const err = new Error('존재하지 않는 OCR페이지입니다.');
+      err.code = 'OCRPAGE_NOT_FOUND';
+      err.status = 404;
+      throw err;
+    }
 
     if (member.maxPage < ocrPage.page) {
       member.maxPage = ocrPage.page;
