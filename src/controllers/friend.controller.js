@@ -366,6 +366,278 @@ const deleteFriend = async (req, res) => {
   }
 };
 
+/**
+ * @swagger
+ * /api/friends/invite/room/{roomId}:
+ *   get:
+ *     summary: 초대 가능한 친구 목록 조회
+ *     tags: [Friend]
+ *     parameters:
+ *       - in: path
+ *         name: roomId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 초대할 방 ID
+ *       - in: query
+ *         name: search
+ *         required: false
+ *         schema:
+ *           type: string
+ *         description: 닉네임 검색어 (부분 일치)
+ *     responses:
+ *       "200":
+ *         description: 친구 목록 조회 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: 초대 가능한 친구목록을 성공적으로 불러왔습니다.
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       userId:
+ *                         type: integer
+ *                         example: 1
+ *                       nickname:
+ *                         type: string
+ *                         example: 친구1 닉네임
+ *                       inviteStatus:
+ *                         type: string
+ *                         enum: [none, invited, pending, attend]
+ *                         example: none
+ *       "401":
+ *         description: 인증 실패
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: 인증이 필요합니다.
+ *                 error:
+ *                   type: object
+ *                   properties:
+ *                     code:
+ *                       type: string
+ *                       example: UNAUTHORIZED
+ *       "500":
+ *         description: 서버 오류
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: 서버 오류가 발생했습니다.
+ *                 error:
+ *                   type: object
+ *                   properties:
+ *                     code:
+ *                       type: string
+ *                       example: INTERNAL_ERROR
+ */
+const getFriendsForInvite = async (req, res) => {
+  try {
+    const {roomId} = req.params;
+    const { search } = req.query;
+    const userId = req.user.userId;
+  
+    const friends = await friendService.getFriendsForInvite({ userId, roomId, search });
+  
+    return res.status(200).json({ 
+      success: true, 
+      message: "초대 가능한 친구목록을 성공적으로 불러왔습니다.",
+      data: friends 
+    });
+
+  } catch (err) {
+    res.status(err.status || 500).json({
+      success: false,
+      message: err.message,
+      error: { code: err.code },
+    });
+  }
+};
+
+/**
+ * @swagger
+ * /api/friends/invite/room/{roomId}:
+ *   post:
+ *     summary: 친구 초대
+ *     tags: [Friend]
+ *     parameters:
+ *       - in: path
+ *         name: roomId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 초대할 방 ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - targetUserId
+ *             properties:
+ *               targetUserId:
+ *                 type: integer
+ *                 example: 2
+ *     responses:
+ *       "200":
+ *         description: 초대 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: 성공적으로 초대를 보냈습니다.
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     memberId:
+ *                       type: integer
+ *                       example: 1
+ *                     roomId:
+ *                       type: integer
+ *                       example: 1
+ *                     userId:
+ *                       type: integer
+ *                       example: 2
+ *                     state:
+ *                       type: string
+ *                       example: invited
+ *                     role:
+ *                       type: string
+ *                       example: member
+ *                     particTime:
+ *                       type: string
+ *                       format: date-time
+ *                       example: 2025-06-05T15:00:00.000Z
+ *       "400":
+ *         description: 잘못된 요청
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: 이미 초대된 사용자입니다.
+ *                 error:
+ *                   type: object
+ *                   properties:
+ *                     code:
+ *                       type: string
+ *                       enum: [ALREADY_INVITED, ALREADY_PENDING, ALREADY_ATTEND]
+ *                       example: ALREADY_INVITED
+ *       "404":
+ *         description: 유저 없음
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: 존재하지 않는 유저입니다.
+ *                 error:
+ *                   type: object
+ *                   properties:
+ *                     code:
+ *                       type: string
+ *                       example: USER_NOT_FOUND
+ *       "401":
+ *         description: 인증 실패
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: 인증이 필요합니다.
+ *                 error:
+ *                   type: object
+ *                   properties:
+ *                     code:
+ *                       type: string
+ *                       example: UNAUTHORIZED
+ *       "500":
+ *         description: 서버 오류
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: 서버 오류가 발생했습니다.
+ *                 error:
+ *                   type: object
+ *                   properties:
+ *                     code:
+ *                       type: string
+ *                       example: INTERNAL_ERROR
+ */
+const inviteFriend = async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const { targetUserId } = req.body;
+  
+    const invite = await friendService.inviteFriend({ roomId, targetUserId });
+  
+    return res.status(200).json({ 
+      success: true, 
+      message: "성공적으로 초대를 보냈습니다.",
+      data: invite
+    });
+
+  } catch (err) {
+    res.status(err.status || 500).json({
+      success: false,
+      message: err.message,
+      error: { code: err.code },
+    });
+  }
+};
+
+
 module.exports = {
   sendFriendRequest,
   getReceivedFriendRequests,
@@ -373,4 +645,6 @@ module.exports = {
   rejectFriendRequest,
   getFriends,
   deleteFriend,
+  getFriendsForInvite,
+  inviteFriend
 };
