@@ -27,13 +27,18 @@ exports.subscribe = async (req, res) => {
     if (!clients.has(ocrPageId)) clients.set(ocrPageId, []);
     clients.get(ocrPageId).push(res);
 
+    const heartbeat = setInterval(() => {
+        res.write(': ping\n\n');
+    }, 25000);
+
     req.on('close', () => {
+        clearInterval(heartbeat);
         const updated = clients.get(ocrPageId).filter(c => c !== res);
         clients.set(ocrPageId, updated);
     });
-    };
+};  // ✅ 여기서 subscribe 닫기
 
-    exports.broadcast = (ocrPageId, event, data) => {
+exports.broadcast = (ocrPageId, event, data) => {
     const pageClients = clients.get(String(ocrPageId)) || [];
     pageClients.forEach(client => {
         client.write(`event: ${event}\n`);
