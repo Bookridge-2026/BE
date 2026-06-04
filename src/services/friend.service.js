@@ -216,11 +216,132 @@ const deleteFriend = async (myId, targetUserId) => {
   return "친구를 삭제했습니다.";
 };
 
+const getFriendsForInvite = async ({ userId, roomId, search }) => {
+
+  const friends = await db.friend.findAll({
+      where: {
+        [Op.or]: [
+          { userId1: userId },
+          { userId2: userId },
+        ],
+      },
+      include: [
+        {
+          model: db.user,
+          as: 'user1',
+          attributes: ['userId', 'nickname'],
+        },
+        {
+          model: db.user,
+          as: 'user2',
+          attributes: ['userId', 'nickname'],
+        },
+      ],
+    });
+
+    const friendUsers = friends.map((f) => {
+      return Number(f.userId1) === userId ? f.user2 : f.user1;
+    });
+
+    if (friendUsers.length === 0) return [];
+
+    const members = await db.member.findAll({
+      where: {
+        roomId,
+        userId: friendUsers.map((f) => f.userId),
+      },
+      attributes: ['userId', 'state'],
+    });
+
+    const memberMap = new Map(
+      members.map((m) => [Number(m.userId), m.state])
+    );
+
+    const result = friendUsers.map((friend) => {
+      const state = memberMap.get(Number(friend.userId));
+
+      let inviteStatus = 'none';
+      if (state === 'invited') inviteStatus = 'invited';
+      if (state === 'pending') inviteStatus = 'pending';
+      if (state === 'attend') inviteStatus = 'attend';
+
+      return {
+        userId: friend.userId,
+        nickname: friend.nickname,
+        inviteStatus,
+      };
+    });
+
+    const filtered = search
+      ? result.filter((f) => f.nickname.includes(search))
+      : result;
+
+    return filtered;
+};
+
+const inviteFriend = async ({ roomId, targetUserId }) => {
+
+  const targetUser = await db.user.findOne({
+    where: { userId: targetUserId },
+  });
+
+  if (!targetUser) {
+    const err = new Error('존재하지 않는 유저입니다.');
+    err.code = 'USER_NOT_FOUND';
+    err.status = 404;
+    throw err;
+  }
+
+  const existing = await db.member.findOne({
+    where: {
+      roomId,
+      userId: targetUserId,
+    },
+    attributes: ['state'],
+  });
+  
+  if (existing?.state === 'invited') {
+    const err = new Error('이미 초대된 사용자입니다.');
+    err.code = 'ALREADY_INVITED';
+    err.status = 400;
+    throw err;
+  }
+  if (existing?.state === 'pending') {
+    const err = new Error('이미 참여요청한 사용자입니다.');
+    err.code = 'ALREADY_PENDING';
+    err.status = 400;
+    throw err;
+  }
+  if (existing?.state === 'attend') {
+    const err = new Error('이미 방에 참여 중인 사용자입니다.');
+    err.code = 'ALREADY_ATTEND';
+    err.status = 400;
+    throw err;
+  }
+
+  const invite = await db.member.create({
+    roomId,
+    userId: targetUserId,
+    state: 'invited',
+    role: 'member',
+    particTime: new Date(),
+    ocrChance: 5,
+    maxPage: 0,
+    color:'',
+    pokeCount: 0,
+  });
+
+  return invite;
+};
+
+
 module.exports = {
   sendFriendRequest,
   getReceivedFriendRequests,
   acceptFriendRequest,
   rejectFriendRequest,
   getFriends,
-  deleteFriend
+  deleteFriend,
+  getFriendsForInvite,
+  inviteFriend
 };
