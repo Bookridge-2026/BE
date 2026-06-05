@@ -19,8 +19,6 @@ const COLOR_PALETTE = [
 
 const pickRandomColor = (usedColors) => {
   const available = COLOR_PALETTE.filter((c) => !usedColors.includes(c));
-  // 팔레트가 모두 소진된 경우는 정원 초과 체크에서 이미 막히므로 발생하지 않음
-  // 방어 코드로 전체 팔레트 fallback 유지
   const pool = available.length > 0 ? available : COLOR_PALETTE;
   return pool[Math.floor(Math.random() * pool.length)];
 };
@@ -218,6 +216,13 @@ const acceptInvite = async (userId, roomId) => {
   });
   if (!member) throw new Error("초대받은 멤버를 찾을 수 없습니다.");
 
+  // 정원 초과 확인 (attend 기준 최대 10명)
+  const attendCount = await db.member.count({
+    where: { roomId, state: "attend" },
+  });
+  if (attendCount >= 10)
+    throw new Error("방의 정원(10명)이 초과되어 수락할 수 없습니다.");
+
   await member.update({ state: "attend" });
   return member;
 };
@@ -253,7 +258,14 @@ const acceptMember = async (leaderId, roomId, targetUserId) => {
   });
   if (!targetMember) throw new Error("입장 요청한 멤버를 찾을 수 없습니다.");
 
-  // 5) attend로 변경
+  // 5) 정원 초과 확인 (attend 기준 최대 10명)
+  const attendCount = await db.member.count({
+    where: { roomId, state: "attend" },
+  });
+  if (attendCount >= 10)
+    throw new Error("방의 정원(10명)이 초과되어 수락할 수 없습니다.");
+
+  // 6) attend로 변경
   await targetMember.update({ state: "attend" });
 
   return targetMember;
