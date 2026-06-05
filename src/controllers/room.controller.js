@@ -379,7 +379,47 @@ const getRoomByInviteCode = async (req, res) => {
   }
 };
 
-// 기존 코드
+
+
+/**
+ * @swagger
+ * /api/rooms/{roomId}:
+ *   get:
+ *     summary: 방 기본 정보 조회
+ *     description: 방 ID로 방 정보와 책 제목, 전체 쪽수, 출판사 등을 조회합니다.
+ *     tags: [Room]
+ *     parameters:
+ *       - in: path
+ *         name: roomId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         example: 1
+ *     responses:
+ *       200:
+ *         description: 조회 성공
+ *         content:
+ *           application/json:
+ *             example:
+ *               success: true
+ *               data:
+ *                 roomId: 1
+ *                 state: "ongoing"
+ *                 startDate: "2025-05-29"
+ *                 period: 14
+ *                 atLeastPeople: 3
+ *                 detail: "함께 읽어요!"
+ *                 book:
+ *                   title: "해리 포터와 마법사의 돌"
+ *                   author: "J.K. 롤링"
+ *                   publisher: "문학수첩"
+ *                   thumbnail: "https://..."
+ *                   totalPage: 423
+ *       404:
+ *         description: 방 없음
+ *       500:
+ *         description: 서버 오류
+ */
 const getRoomDetail = async (req, res) => {
   try {
     const { roomId } = req.params;
