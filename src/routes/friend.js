@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const { isMember } = require('../middlewares/isMember');          
 
 const friendController = require("../controllers/friend.controller");
 
@@ -18,5 +19,8 @@ router.patch("/requests/:friendRequestId/accept", isLogin, friendController.acce
 router.patch("/requests/:friendRequestId/reject", isLogin, friendController.rejectFriendRequest);
 
 router.delete("/users/:userId", isLogin, friendController.deleteFriend);
+
+router.get('/invite/room/:roomId', isLogin, isMember, friendController.getFriendsForInvite);
+router.post('/invite/room/:roomId', isLogin, isMember, friendController.inviteFriend);
 
 module.exports = router;
