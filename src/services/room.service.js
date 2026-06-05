@@ -19,6 +19,8 @@ const COLOR_PALETTE = [
 
 const pickRandomColor = (usedColors) => {
   const available = COLOR_PALETTE.filter((c) => !usedColors.includes(c));
+  // 팔레트가 모두 소진된 경우는 정원 초과 체크에서 이미 막히므로 발생하지 않음
+  // 방어 코드로 전체 팔레트 fallback 유지
   const pool = available.length > 0 ? available : COLOR_PALETTE;
   return pool[Math.floor(Math.random() * pool.length)];
 };
@@ -126,8 +128,7 @@ const createRoom = async (
     detail: detail ?? null,
   });
 
-  // 4) 방장 멤버 등록 + 랜덤 색상 부여
-  const color = pickRandomColor([]);
+  // 4) 방장 멤버 등록 (색상은 방 시작 시점에 일괄 배정)
   const member = await db.member.create({
     userId,
     roomId: room.roomId,
@@ -136,7 +137,7 @@ const createRoom = async (
     role: "leader",
     ocrChance: 5,
     maxPage: 0,
-    color,
+    color: null,
   });
 
   // 5) 최신 book 조회 (totalPage 업데이트 반영)
@@ -169,6 +170,12 @@ const joinRoom = async (userId, roomId) => {
   );
   if (alreadyJoined) throw new Error("이미 참여 중인 방입니다.");
 
+  // 3-1) 정원 초과 확인 (attend + pending 합산 최대 10명)
+  const MAX_CAPACITY = 10;
+  if (room.members.length >= MAX_CAPACITY) {
+    throw new Error("방의 정원(10명)이 초과되었습니다.");
+  }
+
   // 4) 차단 여부 확인 - blockerId/blockedUserId가 모델 명시 컬럼이 아니므로 raw query 사용
   const memberUserIds = room.members.map((m) => m.userId);
   if (memberUserIds.length > 0) {
@@ -189,11 +196,7 @@ const joinRoom = async (userId, roomId) => {
     }
   }
 
-  // 5) 랜덤 색상 부여 (기존 멤버 색상과 겹치지 않게)
-  const usedColors = room.members.map((m) => m.color);
-  const color = pickRandomColor(usedColors);
-
-  // 6) 멤버 등록 (pending 상태 — 방장 수락 후 attend로 변경)
+  // 5) 멤버 등록 (pending 상태 — 방장 수락 후 attend로 변경, 색상은 방 시작 시 일괄 배정)
   const member = await db.member.create({
     userId,
     roomId,
@@ -202,7 +205,7 @@ const joinRoom = async (userId, roomId) => {
     role: "member",
     ocrChance: 5,
     maxPage: 0,
-    color,
+    color: null,
   });
 
   return member;
@@ -305,6 +308,19 @@ const startRoom = async (userId, roomId) => {
       `최소 ${room.atLeastPeople}명 이상이어야 방을 시작할 수 있습니다.`,
     );
   }
+  // 방 시작 시 attend 멤버 전원에게 랜덤 색상 일괄 배정
+  const attendMembers = await db.member.findAll({
+    where: { roomId, state: "attend" },
+    attributes: ["memberId"],
+  });
+
+  const shuffled = [...COLOR_PALETTE].sort(() => Math.random() - 0.5);
+  await Promise.all(
+    attendMembers.map((m, i) =>
+      m.update({ color: shuffled[i % COLOR_PALETTE.length] }),
+    ),
+  );
+
   await room.update({ state: "ongoing", startDate: new Date() });
   return room;
 };
