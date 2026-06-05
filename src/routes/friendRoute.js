@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const { isMember } = require('../middlewares/isMember');          
 
-const friendController = require("../controllers/friend.controller");
+const friendController = require("../controllers/friendController");
 
 const passport = require("passport");
 const isLogin = passport.authenticate("jwt", { session: false });

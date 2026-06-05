@@ -1,7 +1,7 @@
 const vision = require('@google-cloud/vision');
 const { member: Member, room:Room, ocrPage:OcrPage, book:Book, sequelize, ocrHighlight:OcrHighlight, ocrComment:OcrComment } = require('../models');
 const notificationService = require("./notification.service");
-const blockService = require("./block.service");
+const blockService = require("./blockService");
 
 const client = new vision.ImageAnnotatorClient();
 

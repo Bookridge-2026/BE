@@ -6,9 +6,9 @@ router.use("/oauth2", require("./oauth2"));
 router.use("/books", require("./book"));
 router.use("/rooms", require("./room"));
 router.use("/invite", require("./invite"));
-router.use("/friends", require("./friend"));
-router.use("/users", require("./user"));
-router.use("/blocks", require("./block"));
+router.use("/friends", require("./friendRoute"));
+router.use("/users", require("./userRoute"));
+router.use("/blocks", require("./blockRoute"));
 router.use("/ocr", require("./ocrRoute"))
 router.use("/notifications", require("./notification"))
 

@@ -2,7 +2,7 @@ const { Op } = require("sequelize");
 const db = require("../models");
 const notificationService = require("./notification.service");
 
-const blockService = require("./block.service");
+const blockService = require("./blockService");
 
 const sendFriendRequest = async (senderId, receiverId) => {
   if (Number(senderId) === Number(receiverId)) {
