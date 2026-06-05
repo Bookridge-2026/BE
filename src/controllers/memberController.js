@@ -1,4 +1,4 @@
-const memberService = require("../services/member.service");
+const memberService = require("../services/memberService");
 
 /**
  * @swagger

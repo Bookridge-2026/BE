@@ -1,6 +1,6 @@
 const db = require("../models");
 const notificationService = require("./notification.service");
-const blockService = require("./block.service");
+const blockService = require("./blockService");
 
 const getMemberByUserId = async (roomId, userId) => {
     const member = await db.member.findOne({

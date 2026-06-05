@@ -1,7 +1,7 @@
 const { Op } = require("sequelize");
 const db = require("../models");
 const bookService = require("./book.service");
-const blockService = require("./block.service");
+const blockService = require("./blockService");
 
 // 고유 색상 부여
 const COLOR_PALETTE = [

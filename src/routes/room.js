@@ -5,9 +5,9 @@ const passport = require("passport");
 
 const commentController = require("../controllers/comment.controller");
 const emojiController = require("../controllers/emoji.controller");
-const memberController = require("../controllers/member.controller");
+const memberController = require("../controllers/memberController");
 const roomController = require("../controllers/room.controller");
-const songRecommendationController = require("../controllers/songRecommendation.controller");
+const songRecommendationController = require("../controllers/songRecommendationController");
 
 const isLogin = passport.authenticate("jwt", { session: false });
 

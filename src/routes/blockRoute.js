@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 
-const blockController = require("../controllers/block.controller");
+const blockController = require("../controllers/blockController");
 
 const passport = require("passport");
 
