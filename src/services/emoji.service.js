@@ -1,6 +1,6 @@
 const db = require("../models");
 const notificationService = require("./notification.service");
-const blockService = require("./block.service");
+const blockService = require("./blockService");
 
 const EMOJI_CDN = {
     1: "https://cdn.jsdelivr.net/gh/twitter/twemoji@latest/assets/svg/1f62e.svg", // 😮

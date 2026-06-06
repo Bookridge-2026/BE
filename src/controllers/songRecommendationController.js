@@ -1,4 +1,4 @@
-const songRecommendationService = require("../services/songRecommendation.service");
+const songRecommendationService = require("../services/songRecommendationService");
 
 /**
  * @swagger
