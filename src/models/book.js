@@ -48,6 +48,11 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
         comment: "전체쪽수",
       },
+      content: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+        comment: "책줄거리",
+      },
     },
     {
       tableName: "book",
