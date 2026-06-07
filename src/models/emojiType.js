@@ -9,12 +9,13 @@ module.exports = (sequelize, DataTypes) =>{
                 allowNull : false,
                 comment: "이모지종류아이디",
             },
-            emojiUrl:{
-                type : DataTypes.STRING,
-                allowNull: false,
-                comment:"이모지URL",
+            emojiUrl: {
+                type: DataTypes.STRING,
+                allowNull: true,       
+                defaultValue: "none",  
+                comment: "이모지URL",
+                },
             },
-        },
         {
             tableName: "emojitype",
             timestamps: false,

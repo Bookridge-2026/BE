@@ -22,7 +22,8 @@ exports.createCommentNotification = async ({ comment, senderMemberId }) => {
     attributes: ["memberId", "userId"],
   });
 
-  const targets = await getBlockedTargets(sender.userId, roomMembers.filter(
+  // getBlockedTargets → getAllowedTargets 로 수정
+  const targets = await getAllowedTargets(sender.userId, roomMembers.filter(
     (m) => String(m.memberId) !== String(senderMemberId)
   ));
 
