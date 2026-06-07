@@ -548,7 +548,7 @@ const getJoinedRooms = async (userId) => {
     attributes: ["roomId", "state", "startDate", "period", "atLeastPeople"],
   });
 
-  if (rooms.length === 0) throw new Error("참여 중인 방이 없습니다");
+  if (rooms.length === 0) return [];
 
   const blockedUserIds = await blockService.getBlockedUserIds(userId);
   const blockedUserIdSet = new Set(blockedUserIds.map(String));
@@ -624,6 +624,7 @@ const getMyRooms = async (userId, state, nickname) => {
               as: "members",
               where: { role: "leader" },
               attributes: ["userId"],
+
               include: [
                 {
                   model: db.user,
