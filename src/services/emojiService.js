@@ -1,14 +1,7 @@
 const db = require("../models");
-const notificationService = require("./notification.service");
+const notificationService = require("./notificationService");
 const blockService = require("./blockService");
 
-const EMOJI_CDN = {
-    1: "https://cdn.jsdelivr.net/gh/twitter/twemoji@latest/assets/svg/1f62e.svg", // 😮
-    2: "https://cdn.jsdelivr.net/gh/twitter/twemoji@latest/assets/svg/1f622.svg", // 😢
-    3: "https://cdn.jsdelivr.net/gh/twitter/twemoji@latest/assets/svg/2764.svg",  // ❤️
-    4: "https://cdn.jsdelivr.net/gh/twitter/twemoji@latest/assets/svg/1f44d.svg", // 👍
-    5: "https://cdn.jsdelivr.net/gh/twitter/twemoji@latest/assets/svg/1f525.svg", // 🔥
-};
 
 const getMemberByUserId = async (roomId, userId) => {
     const member = await db.member.findOne({
@@ -48,20 +41,19 @@ const getReactions = async (roomId, page, userId) => {
     const blockedUserIdSet = new Set(blockedUserIds.map(String));
 
     return reactions
-    .filter((r) => !blockedUserIdSet.has(String(r.member.userId)))
-    .map((r) => ({
-        emojiId: r.emojiId,
-        page: r.page,
-        emojiType: {
-            emojiTypeId: r.emojiType.emojiTypeId,
-            emojiUrl: EMOJI_CDN[r.emojiType.emojiTypeId] ?? r.emojiType.emojiUrl, // CDN 우선, 없으면 DB fallback
-        },
-        member: {
+        .filter((r) => !blockedUserIdSet.has(String(r.member.userId)))
+        .map((r) => ({
+            emojiId: r.emojiId,
+            page: r.page,
+            emojiType: {
+            emojiTypeId: r.emojiType.emojiTypeId, 
+            },
+            member: {
             memberId: r.member.memberId,
             nickname: r.member.user.nickname,
             color: r.member.color,
-        },
-    }));
+            },
+        }));
 };
 
 // 이모지 추가 (토글)

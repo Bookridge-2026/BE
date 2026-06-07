@@ -1,4 +1,4 @@
-const emojiService = require("../services/emoji.service");
+const emojiService = require("../services/emojiService");
 
 /**
  * @swagger

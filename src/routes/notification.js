@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const passport = require("passport");
-const notificationController = require("../controllers/notification.controller");
+const notificationController = require("../controllers/notificationController");
 const isLogin = passport.authenticate("jwt", { session: false });
 
 router.get("/", isLogin, notificationController.getNotifications);
