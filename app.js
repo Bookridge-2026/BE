@@ -19,7 +19,7 @@ const PORT = process.env.PORT || 3000;
 async function seedEmojiTypes() {
   const count = await db.emojiType.count();
   if (count > 0) return;
-  await db.EmojiType.bulkCreate([
+  await db.emojiType.bulkCreate([
     { emojiTypeId: 1 },
     { emojiTypeId: 2 },
     { emojiTypeId: 3 },
