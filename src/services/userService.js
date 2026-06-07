@@ -136,8 +136,29 @@ const getUserProfile = async (myId, targetUserId) => {
   };
 };
 
+const updateNickname = async (userId, nickname) => {
+  if (!nickname) throw new Error("닉네임을 입력해주세요.");
+
+  const exists = await db.user.findOne({ where: { nickname } });
+  if (exists && Number(exists.userId) !== Number(userId)) {
+    throw new Error("이미 사용 중인 닉네임입니다.");
+  }
+
+  await db.user.update({ nickname }, { where: { userId } });
+  return { nickname };
+};
+
+const updateProfileImage = async (userId, profileImageUrl) => {
+  if (!profileImageUrl) throw new Error("이미지 업로드에 실패했습니다.");
+
+  await db.user.update({ profileImageUrl }, { where: { userId } });
+  return { profileImageUrl };
+};
+
 module.exports = {
   searchUserByCode,
   getFriendStatus,
   getUserProfile,
+  updateNickname,
+  updateProfileImage,
 };
