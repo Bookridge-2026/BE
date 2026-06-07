@@ -10,7 +10,7 @@ const passport = require('passport');
 const multer = require('multer');
 const { subscribe } = require('../controllers/sseController');    
 const { isMember } = require('../middlewares/isMember');          
-const {extractText, saveOcr, newOcrComment, existingOcrComment, getOcrHighlights, getOcrComments, deleteOcrComment, getOcrPage} = require('../controllers/ocrController');
+const {extractText, saveOcr, newOcrComment, existingOcrComment, getOcrHighlights, getOcrComments, deleteOcrComment, getOcrPage, getOcrPageNumbers} = require('../controllers/ocrController');
 const { googleStrategy, jwtStrategy } = require('../config/auth.config');
 
 passport.use(googleStrategy);
@@ -890,5 +890,86 @@ router.get('/rooms/:roomId/highlight/:highlightId/OcrComments', isLogin, isMembe
  *                       example: null
  */
 router.delete('/rooms/:roomId/ocrComment/:ocrCommentId', isLogin, isMember, deleteOcrComment);
+
+/**
+ * @swagger
+ * /api/ocr/rooms/{roomId}:
+ *   get:
+ *     summary: 방의 OCR 페이지 번호 목록 조회
+ *     description: 특정 방에 생성된 OCR 페이지들의 쪽수 리스트를 반환합니다.
+ *     tags: [OCR]
+ *     parameters:
+ *       - in: path
+ *         name: roomId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *           format: int64
+ *         description: 조회할 방의 ID
+ *     responses:
+ *       200:
+ *         description: 페이지 번호 목록 조회 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: 해당 방의 ocr페이지 번호들을 성공적으로 불러왔습니다.
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: integer
+ *                   example: [1, 2, 3, 5, 7]
+ *       401:
+ *         description: 로그인 필요
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: 로그인이 필요합니다.
+ *       403:
+ *         description: 방 멤버가 아님
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: 해당 방의 멤버가 아닙니다.
+ *       500:
+ *         description: 서버 오류
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: 서버 오류가 발생했습니다.
+ *                 error:
+ *                   type: object
+ *                   properties:
+ *                     code:
+ *                       type: string
+ */
+router.get('/rooms/:roomId', isLogin, isMember, getOcrPageNumbers);
 
 module.exports = router;

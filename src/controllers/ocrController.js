@@ -1,4 +1,4 @@
-const { extractTextFromImage, saveOcr, newOcrComment, existingOcrComment, getOcrHighlights, getOcrComments, deleteOcrComment, getOcrPage } = require('../services/ocrService');
+const { extractTextFromImage, saveOcr, newOcrComment, existingOcrComment, getOcrHighlights, getOcrComments, deleteOcrComment, getOcrPage, getOcrPageNumbers } = require('../services/ocrService');
 const { broadcast } = require('./sseController');
 
 exports.getOcrPage = async (req, res) =>  {
@@ -170,6 +170,28 @@ exports.deleteOcrComment = async(req, res) => {
     res.status(200).json({ 
       success: true, 
       message: "해당 코멘트를 성공적으로 삭제했습니다."
+    });
+
+  } catch (err) {
+    res.status(err.status || 500).json({
+      success: false,
+      message: err.message,
+      error: { code: err.code },
+    });
+  } 
+}
+
+exports.getOcrPageNumbers = async(req, res) => {
+  try {
+
+    const { roomId } = req.params;
+
+    const result = await getOcrPageNumbers(roomId);
+
+    res.status(200).json({ 
+      success: true, 
+      message: "해당 방의 ocr페이지 번호들을 성공적으로 불러왔습니다.",
+      data: result
     });
 
   } catch (err) {
