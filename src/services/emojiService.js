@@ -1,5 +1,5 @@
 const db = require("../models");
-const notificationService = require("./notification.service");
+const notificationService = require("./notificationService");
 const blockService = require("./blockService");
 
 const EMOJI_CDN = {
