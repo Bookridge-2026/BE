@@ -195,8 +195,108 @@ const getMe = async (req, res) => {
     }
 };
 
+/**
+ * @swagger
+ * /api/users/me/nickname:
+ *   patch:
+ *     summary: 닉네임 수정
+ *     description: 현재 로그인한 유저의 닉네임을 수정합니다.
+ *     tags: [User]
+ *     security:
+ *       - Authorization: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - nickname
+ *             properties:
+ *               nickname:
+ *                 type: string
+ *                 example: "새닉네임"
+ *     responses:
+ *       200:
+ *         description: 수정 성공
+ *         content:
+ *           application/json:
+ *             example:
+ *               success: true
+ *               data:
+ *                 nickname: "새닉네임"
+ *       400:
+ *         description: 닉네임 없음 / 중복 닉네임
+ *       500:
+ *         description: 서버 오류
+ */
+const updateNickname = async (req, res) => {
+    try {
+        const userId = req.user.userId;
+        const { nickname } = req.body;
+
+        const result = await userService.updateNickname(userId, nickname);
+        return res.status(200).json({ success: true, data: result });
+    } catch (error) {
+        const status = error.message.includes("이미 사용 중인") ? 400 : 500;
+        return res.status(status).json({ success: false, message: error.message });
+    }
+};
+
+/**
+ * @swagger
+ * /api/users/me/profile-image:
+ *   patch:
+ *     summary: 프로필 이미지 수정
+ *     description: 현재 로그인한 유저의 프로필 이미지를 수정합니다. multipart/form-data로 이미지 파일을 전송합니다.
+ *     tags: [User]
+ *     security:
+ *       - Authorization: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               image:
+ *                 type: string
+ *                 format: binary
+ *                 description: 업로드할 이미지 파일
+ *     responses:
+ *       200:
+ *         description: 수정 성공
+ *         content:
+ *           application/json:
+ *             example:
+ *               success: true
+ *               data:
+ *                 profileImageUrl: "https://bookridge.s3.ap-northeast-2.amazonaws.com/bookridge/1234567890.jpg"
+ *       400:
+ *         description: 이미지 파일 없음
+ *       500:
+ *         description: 서버 오류
+ */
+const updateProfileImage = async (req, res) => {
+    try {
+        const userId = req.user.userId;
+
+        if (!req.file) {
+            return res.status(400).json({ success: false, message: "이미지 파일을 업로드해주세요." });
+        }
+
+        const profileImageUrl = req.file.location;
+        const result = await userService.updateProfileImage(userId, profileImageUrl);
+        return res.status(200).json({ success: true, data: result });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 module.exports = {
   searchUserByCode,
   getUserProfile,
   getMe,
+  updateNickname,
+  updateProfileImage,
 };
