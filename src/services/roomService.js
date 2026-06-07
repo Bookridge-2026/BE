@@ -320,6 +320,11 @@ const startRoom = async (userId, roomId) => {
       `최소 ${room.atLeastPeople}명 이상이어야 방을 시작할 수 있습니다.`,
     );
   }
+  // 방 시작 시 pending 상태 멤버는 자동 거절 처리 (삭제)
+  await db.member.destroy({
+    where: { roomId, state: "pending" },
+  });
+
   // 방 시작 시 attend 멤버 전원에게 랜덤 색상 일괄 배정
   const attendMembers = await db.member.findAll({
     where: { roomId, state: "attend" },
@@ -854,8 +859,8 @@ const getMyBooks = async (userId) => {
     },
   }));
 
-    // 시작일 오름차순 정렬 (오래된 방이 먼저 나옴)
-    books.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+  // 시작일 오름차순 정렬 (오래된 방이 먼저 나옴)
+  books.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
 
   const closedCount = books.filter((b) => b.state === "closed").length;
 
