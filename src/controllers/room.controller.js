@@ -504,6 +504,7 @@ const getMembersProgress = async (req, res) => {
  *               data:
  *                 - roomId: 1
  *                   state: "ongoing"
+ *                   myRole: "leader"
  *                   book:
  *                     title: "앵무새 죽이기"
  *                     author: "Harper Lee"
@@ -522,6 +523,7 @@ const getMembersProgress = async (req, res) => {
  *                       color: "#0000FF"
  *                 - roomId: 2
  *                   state: "waiting"
+ *                   myRole: "member"
  *                   book:
  *                     title: "채식주의자"
  *                     author: "한강"

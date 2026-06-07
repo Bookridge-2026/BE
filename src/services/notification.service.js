@@ -1,5 +1,5 @@
 const db = require("../models");
-const blockService = require("./block.service");
+const blockService = require("./blockService");
 
 const getAllowedTargets = async (senderUserId, targets) => {
   const results = await Promise.all(

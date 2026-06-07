@@ -1,4 +1,4 @@
-const blockService = require("../services/block.service");
+const blockService = require("../services/blockService");
 
 /**
  * @swagger

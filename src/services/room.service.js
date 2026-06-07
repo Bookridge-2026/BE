@@ -1,7 +1,7 @@
 const { Op } = require("sequelize");
 const db = require("../models");
 const bookService = require("./book.service");
-const blockService = require("./block.service");
+const blockService = require("./blockService");
 
 // 고유 색상 부여
 const COLOR_PALETTE = [
@@ -524,7 +524,7 @@ const getJoinedRooms = async (userId) => {
         model: db.member,
         as: "members",
         where: { userId, state: "attend" },
-        attributes: ["maxPage"],
+        attributes: ["maxPage", "role"],
       },
       {
         model: db.book,
@@ -557,6 +557,7 @@ const getJoinedRooms = async (userId) => {
     const myMember = room.members[0];
     const totalPages = room.book.totalPage;
     const maxReadPage = myMember.maxPage;
+    const myRole = myMember.role;
 
     // 독서 진행률 계산
     const progressRate =
@@ -592,6 +593,7 @@ const getJoinedRooms = async (userId) => {
       atLeastPeople: room.atLeastPeople,
       progressRate,
       maxReadPage,
+      myRole,
       totalPages,
       memberProfiles,
     };
@@ -851,8 +853,8 @@ const getMyBooks = async (userId) => {
     },
   }));
 
-  // 시작일 순서로 정렬
-  books.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+    // 시작일 오름차순 정렬 (오래된 방이 먼저 나옴)
+    books.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
 
   const closedCount = books.filter((b) => b.state === "closed").length;
 

@@ -1,4 +1,4 @@
-const friendService = require("../services/friend.service");
+const friendService = require("../services/friendService");
 
 /**
  * @swagger

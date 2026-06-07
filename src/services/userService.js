@@ -1,7 +1,7 @@
 const { Op } = require("sequelize");
 const db = require("../models");
 
-const blockService = require("./block.service");
+const blockService = require("./blockService");
 
 const getFriendStatus = async (myId, targetId) => {
   const isBlocked = await blockService.isBlocked(myId, targetId);

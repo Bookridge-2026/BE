@@ -230,7 +230,7 @@ router.post('/register', async (req, res) => {
             googleId: payload.googleId,
             email: payload.email,
             nickname,
-            profileImageUrl: "https://bookridge.s3.ap-northeast-2.amazonaws.com/profile2.svg",
+            profileImageUrl: "https://booklidge.s3.ap-northeast-2.amazonaws.com/profile2.svg",
             userCode,
             updatedAt: new Date(),
         });
