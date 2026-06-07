@@ -1,4 +1,4 @@
-const roomService = require("../services/room.service");
+const roomService = require("../services/roomService");
 
 /**
  * @swagger

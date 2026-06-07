@@ -1,4 +1,4 @@
-const commentService = require("../services/comment.service");
+const commentService = require("../services/commentService");
 
 /**
  * @swagger

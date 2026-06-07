@@ -1,4 +1,4 @@
-const bookService = require("../services/book.service");
+const bookService = require("../services/bookService");
 
 /**
  * @swagger

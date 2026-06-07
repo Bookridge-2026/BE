@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const passport = require("passport");
 const { jwtStrategy } = require("../config/auth.config");
-const bookController = require("../controllers/book.controller");
+const bookController = require("../controllers/bookController");
 
 passport.use(jwtStrategy);
 const isLogin = passport.authenticate("jwt", { session: false });
