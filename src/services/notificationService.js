@@ -174,3 +174,31 @@ exports.createFriendAcceptedNotification = async ({ acceptorUserId, receiverUser
   } catch (err) {
   }
 };
+
+
+exports.createPokeNotification = async ({ senderMemberId, targetMemberId }) => {
+  try {
+    const targetMember = await db.member.findByPk(targetMemberId, {
+      attributes: ["userId"],
+    });
+    if (!targetMember) return;
+
+    const sender = await db.member.findByPk(senderMemberId, {
+      attributes: ["userId"],
+    });
+    if (!sender) return;
+
+    const receiverUserId = targetMember.userId;
+    if (String(sender.userId) === String(receiverUserId)) return;
+
+    const blockedByReceiver = await blockService.isBlocked(receiverUserId, sender.userId);
+    if (blockedByReceiver) return;
+
+    await db.notification.create({
+      receiverUserId,
+      senderMemberId,
+      type: "poke",
+      isRead: 0,
+    });
+  } catch (err) {}
+};

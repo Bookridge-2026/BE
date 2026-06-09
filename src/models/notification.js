@@ -32,7 +32,7 @@ module.exports = (sequelize, DataTypes) => {
       },
 
       type: {
-        type: DataTypes.ENUM("comment", "reply", "emoji", "ocr", "friend_request", "friend_accepted"),
+        type: DataTypes.ENUM("comment", "reply", "emoji", "ocr", "friend_request", "friend_accepted","poke"),
         allowNull: false,
         comment: "알림 종류",
       },
