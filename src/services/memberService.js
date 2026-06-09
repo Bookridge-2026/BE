@@ -1,4 +1,5 @@
 const db = require("../models");
+const notificationService = require("./notificationService");
 
 const pokeMember = async (roomId, leaderUserId, targetMemberId) => {
   const room = await db.room.findOne({ where: { roomId } });
