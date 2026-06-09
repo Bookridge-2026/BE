@@ -42,7 +42,12 @@ const pokeMember = async (roomId, leaderUserId, targetMemberId) => {
   const pokeLimit = room.poke;
   const canKick = targetMember.pokeCount >= pokeLimit;
 
-  // TODO: 알림 기능 연결
+
+  //알림
+  await notificationService.createPokeNotification({
+    senderMemberId: leader.memberId,
+    targetMemberId: targetMember.memberId,
+  });
 
   return {
     memberId: targetMember.memberId,
