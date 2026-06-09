@@ -12,6 +12,7 @@ const { jwtStrategy } = require("./src/config/auth.config"); // 추가
 const { swaggerUi, specs } = require("./src/config/swaggerConfig");
 const { sequelize } = require("./src/models");
 const db = require("./src/models");
+require("./src/utils/roomScheduler")(db);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
