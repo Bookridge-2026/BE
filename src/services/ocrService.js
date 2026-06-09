@@ -343,3 +343,14 @@ exports.deleteOcrComment = async(ocrCommentId, member) => {
 
   await ocrComment.destroy();
 }
+
+exports.getOcrPageNumbers = async (roomId) => {
+    const ocrPages = await OcrPage.findAll({
+        where: { roomId },
+        attributes: ['page'],
+        group: ['page'],
+        order: [['page', 'ASC']],
+    });
+
+    return ocrPages.map(p => p.page);
+};
