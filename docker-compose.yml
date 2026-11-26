@@ -6,9 +6,20 @@ services:
       - "3000:3000"
     env_file:
       - .env
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
     restart: always
     depends_on:
       - mysql
+      - redis
+    networks:
+      - bookridge-network
+
+  redis:
+    container_name: redis-container
+    image: redis:7-alpine
+    restart: always
     networks:
       - bookridge-network
 
